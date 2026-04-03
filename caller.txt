@@ -1,0 +1,6 @@
+
+
+curl -X PATCH http://localhost:3000/auth/edit-name
+-H "Content-Type: application/json"
+-H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJzZXVlbWFpbEBleGFtcGxlLmNvbSIsImlhdCI6MTc3MzUxNjAzOCwiZXhwIjoxNzczNTE5NjM4fQ.9T2zUDDOkRAb3SjUadtTT14c9C_Rv0Cn_NHcwiuN9hU"
+-d '{"name":"NovoNome"}'

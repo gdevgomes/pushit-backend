@@ -1,0 +1,29 @@
+node_modules/
+
+# banco de dados local
+database/dev.sqlite
+database/test.sqlite
+
+# ambiente
+.env
+.env.*
+!.env.example
+
+# build
+dist/
+
+# logs
+*.log
+npm-debug.log*
+
+# editor
+.vscode/
+.idea/
+*.swp
+
+# claude
+.claude/
+
+# chaves ssh
+github
+github.pub
