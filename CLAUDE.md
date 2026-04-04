@@ -17,7 +17,18 @@ npm run seed              # Run seeders
 npm run knex -- <command>
 ```
 
-There is no build step for production — the project currently runs via ts-node-dev. There are no tests configured.
+There is no build step for production — the project currently runs via ts-node-dev.
+
+## Preferences
+
+- **Validation:** run `npm test` to validate changes, not curl
+- **Seeds:** keep seeds simple and usable for frontend development; admin user is id=1, email `admin@admin.com`, password `admin123`
+- **Errors:** always use `AppError(Errors.*)` for all throws — never use `throw new Error()` directly
+
+## Always do when changing routes or data shapes
+
+- **Postman collection:** keep `postman-group-collection.json` up to date whenever routes are added, removed, or their request/response shape changes.
+- **Tests:** keep the test files in `tests/` up to date whenever business logic, services, or repositories change.
 
 ## Architecture
 

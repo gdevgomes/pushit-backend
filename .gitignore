@@ -23,6 +23,7 @@ npm-debug.log*
 
 # claude
 .claude/
+claude.js
 
 # chaves ssh
 github
