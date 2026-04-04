@@ -46,6 +46,7 @@ export async function up(knex: Knex): Promise<void> {
       .references('id').inTable('users').onDelete('CASCADE');
     table.integer('group_id').unsigned().notNullable()
       .references('id').inTable('groups').onDelete('CASCADE');
+    table.timestamp('created_at').notNullable().defaultTo(knex.fn.now());
     table.primary(['user_id', 'group_id']);
 
     table.index(['user_id'], 'idx_users_groups_user_id');

@@ -435,3 +435,24 @@ describe('POST /group/:id/leave — dono sai e transfere ownership', () => {
     expect(res.status).toBe(403);
   });
 });
+
+describe('GET /group/code/:code', () => {
+  it('retorna preview do grupo pelo código', async () => {
+    const { token } = await registerAndLogin();
+    const { body: group } = await createGroup(token, { name: 'Grupo Público' });
+
+    const res = await request(app).get(`/group/code/${group.code}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ id: group.id, name: 'Grupo Público' });
+    expect(res.body).toHaveProperty('owner_name');
+    expect(res.body).not.toHaveProperty('owner_email');
+  });
+
+  it('retorna 404 para código inexistente', async () => {
+    const res = await request(app).get('/group/code/XXXXXX');
+
+    expect(res.status).toBe(404);
+    expect(res.body.key).toBe('GROUP_NOT_FOUND');
+  });
+});

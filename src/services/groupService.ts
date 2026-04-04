@@ -124,6 +124,12 @@ const updateGroup = async (
   return updated[0];
 };
 
+const getGroupByCode = async (code: string) => {
+  const group = await groupRepository.getGroupByCode(code);
+  if (!group) throw new AppError(Errors.GROUP_NOT_FOUND);
+  return group;
+};
+
 const getSubscription = async (groupId: number, user: any) => {
   const groups = await groupRepository.getGroupsByUser(user.id);
   const group = groups.find((g: Group) => g.id === groupId);
@@ -146,5 +152,6 @@ export default {
   getUsersByGroup,
   isUserInGroup,
   updateGroup,
+  getGroupByCode,
   getSubscription,
 };

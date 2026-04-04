@@ -19,12 +19,16 @@ export async function registerAndLogin(overrides: UserData = {}) {
     ...overrides,
   };
 
-  await request(app).post('/auth/register').send(userData);
+  const registerRes = await request(app).post('/auth/register').send(userData);
 
   const loginRes = await request(app).post('/auth/login').send({
     email: userData.email,
     password: userData.password,
   });
 
-  return { token: loginRes.body.token as string, email: userData.email };
+  return {
+    token: loginRes.body.token as string,
+    email: userData.email,
+    id: registerRes.body.id as number,
+  };
 }

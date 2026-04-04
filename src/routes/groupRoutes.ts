@@ -6,6 +6,7 @@ import { CreateGroupSchema, UpdateGroupSchema, JoinLeaveGroupSchema, OwnerLeaveS
 
 const groupRouter = Router();
 
+groupRouter.get('/code/:code', groupController.getGroupByCode);
 groupRouter.post('/', authMiddleware, validate(CreateGroupSchema), groupController.createGroup);
 groupRouter.put('/:id', authMiddleware, validate(UpdateGroupSchema), groupController.updateGroup);
 groupRouter.post('/join', authMiddleware, validate(JoinLeaveGroupSchema), groupController.joinGroup);

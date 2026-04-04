@@ -76,6 +76,15 @@ export const ownerLeaveGroup = async (req: Request, res: Response, next: NextFun
   }
 };
 
+export const getGroupByCode = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const group = await groupService.getGroupByCode(req.params.code as string);
+    res.status(200).json(group);
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const getSubscription = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const subscription = await groupService.getSubscription(Number(req.params.id), req.user!);
