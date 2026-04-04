@@ -1,9 +1,10 @@
 import { AppError, Errors } from '../errors';
 import {
   findUserByEmail,
+  findUserById,
   createUser,
   createProfile,
-  updateUserName,
+  updateProfile,
 } from '../repositories/userRepository';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
@@ -48,12 +49,49 @@ const loginUser = async (email: string, password: string) => {
     { expiresIn: '1d' }
   );
 
-  return { token };
+  return {
+    token,
+    user: {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      timezone: user.timezone,
+    },
+  };
 };
 
-const editUserName = async (id: number, name: string) => {
-  if (!name) throw new AppError(Errors.NAME_REQUIRED);
-  return updateUserName(id, name);
+type EditProfileData = {
+  name?: string;
+  timezone?: string;
+  email?: string;
+  currentPassword?: string;
+  password?: string;
 };
 
-export { createNewUser, loginUser, editUserName };
+const editProfile = async (id: number, data: EditProfileData) => {
+  const profileFields: Partial<{ name: string; timezone: string }> = {};
+  const userFields: Partial<{ email: string; passwordHash: string }> = {};
+
+  if (data.name) profileFields.name = data.name;
+  if (data.timezone) profileFields.timezone = data.timezone;
+
+  if (data.email) {
+    const existing = await findUserByEmail({ email: data.email });
+    if (existing && existing.id !== id) throw new AppError(Errors.USER_EXISTS);
+    userFields.email = data.email;
+  }
+
+  if (data.password) {
+    const user = await findUserById(id);
+    if (!user) throw new AppError(Errors.USER_NOT_FOUND);
+    const fullUser = await findUserByEmail({ email: user.email });
+    if (!fullUser) throw new AppError(Errors.USER_NOT_FOUND);
+    const valid = await bcrypt.compare(data.currentPassword!, fullUser.passwordHash);
+    if (!valid) throw new AppError(Errors.INVALID_PASSWORD);
+    userFields.passwordHash = await hashPassword(data.password);
+  }
+
+  return updateProfile(id, profileFields, userFields);
+};
+
+export { createNewUser, loginUser, editProfile };

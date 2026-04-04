@@ -50,7 +50,7 @@ describe('POST /auth/login', () => {
     await request(app).post('/auth/register').send(baseUser);
   });
 
-  it('retorna token com credenciais corretas', async () => {
+  it('retorna token e perfil com credenciais corretas', async () => {
     const res = await request(app).post('/auth/login').send({
       email: baseUser.email,
       password: baseUser.password,
@@ -59,6 +59,13 @@ describe('POST /auth/login', () => {
     expect(res.status).toBe(200);
     expect(res.body).toHaveProperty('token');
     expect(typeof res.body.token).toBe('string');
+    expect(res.body.user).toMatchObject({
+      email: baseUser.email,
+      name: baseUser.name,
+    });
+    expect(res.body.user).toHaveProperty('id');
+    expect(res.body.user).toHaveProperty('timezone');
+    expect(res.body.user).not.toHaveProperty('passwordHash');
   });
 
   it('retorna 404 para e-mail não cadastrado', async () => {
@@ -80,7 +87,7 @@ describe('POST /auth/login', () => {
   });
 });
 
-describe('PATCH /auth/edit-name', () => {
+describe('PATCH /auth/profile', () => {
   let token: string;
 
   beforeEach(async () => {
@@ -94,16 +101,64 @@ describe('PATCH /auth/edit-name', () => {
 
   it('atualiza o nome do usuário autenticado', async () => {
     const res = await request(app)
-      .patch('/auth/edit-name')
+      .patch('/auth/profile')
       .set('Authorization', `Bearer ${token}`)
       .send({ name: 'Novo Nome' });
 
     expect(res.status).toBe(200);
+    expect(res.body.name).toBe('Novo Nome');
+  });
+
+  it('atualiza o timezone do usuário autenticado', async () => {
+    const res = await request(app)
+      .patch('/auth/profile')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ timezone: 'America/Sao_Paulo' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.timezone).toBe('America/Sao_Paulo');
+  });
+
+  it('atualiza o email do usuário autenticado', async () => {
+    const res = await request(app)
+      .patch('/auth/profile')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ email: 'novo@test.com' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.email).toBe('novo@test.com');
+  });
+
+  it('atualiza a senha com currentPassword correto', async () => {
+    const res = await request(app)
+      .patch('/auth/profile')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ password: 'novaSenha123', confirmPassword: 'novaSenha123', currentPassword: baseUser.password });
+
+    expect(res.status).toBe(200);
+  });
+
+  it('retorna 401 ao trocar senha com currentPassword incorreto', async () => {
+    const res = await request(app)
+      .patch('/auth/profile')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ password: 'novaSenha123', confirmPassword: 'novaSenha123', currentPassword: 'senha_errada' });
+
+    expect(res.status).toBe(401);
+  });
+
+  it('retorna 400 quando nenhum campo é enviado', async () => {
+    const res = await request(app)
+      .patch('/auth/profile')
+      .set('Authorization', `Bearer ${token}`)
+      .send({});
+
+    expect(res.status).toBe(400);
   });
 
   it('retorna 401 sem token', async () => {
     const res = await request(app)
-      .patch('/auth/edit-name')
+      .patch('/auth/profile')
       .send({ name: 'Novo Nome' });
 
     expect(res.status).toBe(401);
@@ -111,19 +166,10 @@ describe('PATCH /auth/edit-name', () => {
 
   it('retorna 401 com token inválido', async () => {
     const res = await request(app)
-      .patch('/auth/edit-name')
+      .patch('/auth/profile')
       .set('Authorization', 'Bearer token_invalido')
       .send({ name: 'Novo Nome' });
 
     expect(res.status).toBe(401);
-  });
-
-  it('retorna 400 quando name está vazio', async () => {
-    const res = await request(app)
-      .patch('/auth/edit-name')
-      .set('Authorization', `Bearer ${token}`)
-      .send({ name: '' });
-
-    expect(res.status).toBe(400);
   });
 });

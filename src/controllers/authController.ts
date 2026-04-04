@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import {
   createNewUser,
   loginUser,
-  editUserName as editUserNameService,
+  editProfile as editProfileService,
 } from '../services/userService';
 import { AppError, Errors } from '../errors';
 
@@ -25,16 +25,16 @@ const login = async (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
-const editUser = async (req: Request, res: Response, next: NextFunction) => {
+const editProfile = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = req.user?.id;
-    const { name } = req.body;
     if (!userId) throw new AppError(Errors.UNAUTHORIZED);
-    const updated = await editUserNameService(userId, name);
+    const { name, timezone, email, currentPassword, password } = req.body;
+    const updated = await editProfileService(userId, { name, timezone, email, currentPassword, password });
     return res.status(200).json(updated);
   } catch (error) {
     next(error);
   }
 };
 
-export { createAuth, login, editUser };
+export { createAuth, login, editProfile };

@@ -67,7 +67,7 @@
           }
         },
         {
-          "name": "Editar nome",
+          "name": "Editar perfil",
           "request": {
             "method": "PATCH",
             "header": [
@@ -75,13 +75,13 @@
               { "key": "Authorization", "value": "Bearer {{token}}", "type": "text" }
             ],
             "url": {
-              "raw": "{{baseUrl}}/auth/edit-name",
+              "raw": "{{baseUrl}}/auth/profile",
               "host": ["{{baseUrl}}"],
-              "path": ["auth", "edit-name"]
+              "path": ["auth", "profile"]
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Novo Nome\"\n}",
+              "raw": "{\n  \"name\": \"Novo Nome\",\n  \"timezone\": \"America/Sao_Paulo\",\n  \"email\": \"novo@email.com\",\n  \"currentPassword\": \"senhaAtual\",\n  \"password\": \"novaSenha123\",\n  \"confirmPassword\": \"novaSenha123\"\n}",
               "options": { "raw": { "language": "json" } }
             }
           }
