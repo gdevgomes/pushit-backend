@@ -7,7 +7,10 @@
   "variable": [
     { "key": "baseUrl", "value": "http://localhost:3000", "type": "string" },
     { "key": "token",   "value": "", "type": "string" },
-    { "key": "groupId", "value": "1", "type": "string" }
+    { "key": "groupId", "value": "1", "type": "string" },
+    { "key": "pixPaymentId",    "value": "", "type": "string" },
+    { "key": "pixQrCodeId",     "value": "", "type": "string" },
+    { "key": "abacatePayApiKey","value": "", "type": "string" }
   ],
   "item": [
     {
@@ -216,6 +219,112 @@
               "host": ["{{baseUrl}}"],
               "path": ["group", "{{groupId}}", "users", ":userId"],
               "variable": [{ "key": "userId", "value": "1" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Pagamentos (PIX)",
+      "item": [
+        {
+          "name": "Gerar QR Code PIX",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.id) {",
+                  "  pm.collectionVariables.set('pixPaymentId', json.id);",
+                  "  console.log('pixPaymentId salvo:', json.id);",
+                  "}",
+                  "if (json.pixBrCode) {",
+                  "  console.log('PIX copia-e-cola:', json.pixBrCode);",
+                  "}",
+                  "// Extrair o ID do QR code do Abacate Pay a partir do external_id",
+                  "// Use este ID para simular o pagamento"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/payment/group/{{groupId}}/pix",
+              "host": ["{{baseUrl}}"],
+              "path": ["payment", "group", "{{groupId}}", "pix"]
+            }
+          }
+        },
+        {
+          "name": "Histórico de pagamentos",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/payment/group/{{groupId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["payment", "group", "{{groupId}}"]
+            }
+          }
+        },
+        {
+          "name": "Simular pagamento (sandbox Abacate Pay)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json", "type": "text" },
+              { "key": "Authorization", "value": "Bearer {{abacatePayApiKey}}", "type": "text" }
+            ],
+            "url": {
+              "raw": "https://api.abacatepay.com/v1/pixQrCode/simulate-payment?id={{pixQrCodeId}}",
+              "protocol": "https",
+              "host": ["api", "abacatepay", "com"],
+              "path": ["v1", "pixQrCode", "simulate-payment"],
+              "query": [{ "key": "id", "value": "{{pixQrCodeId}}" }]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "Verificar assinatura do grupo",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/group/{{groupId}}/subscription",
+              "host": ["{{baseUrl}}"],
+              "path": ["group", "{{groupId}}", "subscription"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Planos",
+      "item": [
+        {
+          "name": "Listar planos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/plans",
+              "host": ["{{baseUrl}}"],
+              "path": ["plans"]
             }
           }
         }

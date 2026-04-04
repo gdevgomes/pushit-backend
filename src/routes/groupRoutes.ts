@@ -1,24 +1,19 @@
 import { Router } from 'express';
 import * as groupController from '../controllers/groupController';
 import authMiddleware from '../middlewares/authMiddleware';
+import { validate } from '../middlewares/validate';
+import { CreateGroupSchema, UpdateGroupSchema, JoinLeaveGroupSchema, OwnerLeaveSchema, PaginationSchema } from '../schemas';
 
 const groupRouter = Router();
 
-// criar grupo
-groupRouter.post('/', authMiddleware, groupController.createGroup);
-// editar nome/descricao do grupo
-groupRouter.put('/:id', authMiddleware, groupController.updateGroup);
-// entrar em grupo
-groupRouter.post('/join', authMiddleware, groupController.joinGroup);
-// sair do grupo
-groupRouter.post('/leave', authMiddleware, groupController.leaveGroup);
-// buscar grupos de usuário
-groupRouter.get('/user', authMiddleware, groupController.getUserGroups);
-// buscar usuários de grupo
-groupRouter.get('/:id/users', authMiddleware, groupController.getGroupUsers);
-// dono remove membro do grupo
+groupRouter.post('/', authMiddleware, validate(CreateGroupSchema), groupController.createGroup);
+groupRouter.put('/:id', authMiddleware, validate(UpdateGroupSchema), groupController.updateGroup);
+groupRouter.post('/join', authMiddleware, validate(JoinLeaveGroupSchema), groupController.joinGroup);
+groupRouter.post('/leave', authMiddleware, validate(JoinLeaveGroupSchema), groupController.leaveGroup);
+groupRouter.get('/user', authMiddleware, validate(PaginationSchema, 'query'), groupController.getUserGroups);
+groupRouter.get('/:id/users', authMiddleware, validate(PaginationSchema, 'query'), groupController.getGroupUsers);
 groupRouter.delete('/:id/users/:userId', authMiddleware, groupController.kickUser);
-// assinatura do grupo
+groupRouter.post('/:id/leave', authMiddleware, validate(OwnerLeaveSchema), groupController.ownerLeaveGroup);
 groupRouter.get('/:id/subscription', authMiddleware, groupController.getSubscription);
 
 export { groupRouter };

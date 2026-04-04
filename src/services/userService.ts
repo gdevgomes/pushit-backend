@@ -1,53 +1,46 @@
-import { AppError } from '../middlewares/errorHandler';
+import { AppError, Errors } from '../errors';
 import {
   findUserByEmail,
   createUser,
+  createProfile,
   updateUserName,
 } from '../repositories/userRepository';
 import bcrypt from 'bcrypt';
-import { NewUser } from '../types/user';
 import jwt from 'jsonwebtoken';
-
-const findUser = async (user: NewUser) => {
-  return await findUserByEmail({
-    email: user.email,
-  });
-};
 
 async function hashPassword(password: string) {
   const saltRounds = 10;
-  const hash = await bcrypt.hash(password, saltRounds);
-  return hash;
+  return bcrypt.hash(password, saltRounds);
 }
 
 const createNewUser = async (userData: any) => {
-  const hasUser = await findUser(userData);
-  if (hasUser) {
-    throw new AppError('User Exists', 409);
-  }
-  if (!userData.password || !userData.confirmPassword) {
-    throw new AppError('Password and Confirm Password Required', 400);
-  }
-  if (userData.password !== userData.confirmPassword) {
-    throw new AppError("Password don't match", 400);
-  }
+  const existing = await findUserByEmail({ email: userData.email });
+  if (existing) throw new AppError(Errors.USER_EXISTS);
 
-  const { password, confirmPassword, ...user } = userData;
+  if (!userData.password || !userData.confirmPassword)
+    throw new AppError(Errors.PASSWORD_REQUIRED);
+  if (userData.password !== userData.confirmPassword)
+    throw new AppError(Errors.PASSWORD_MISMATCH);
 
-  const newUser = await createUser({
-    ...user,
-    timezone: userData.timezone ?? 'UTC',
+  const user = await createUser({
+    email: userData.email,
     passwordHash: await hashPassword(userData.password),
   });
 
-  return newUser;
+  await createProfile({
+    user_id: user.id,
+    name: userData.name,
+    timezone: userData.timezone ?? 'UTC',
+  });
+
+  return { id: user.id, name: userData.name, email: user.email, timezone: userData.timezone ?? 'UTC' };
 };
 
 const loginUser = async (email: string, password: string) => {
   const user = await findUserByEmail({ email });
-  if (!user) throw new AppError('User not found', 404);
+  if (!user) throw new AppError(Errors.USER_NOT_FOUND);
   const valid = await bcrypt.compare(password, user.passwordHash);
-  if (!valid) throw new AppError('Invalid password', 401);
+  if (!valid) throw new AppError(Errors.INVALID_PASSWORD);
 
   const token = jwt.sign(
     { id: user.id, email: user.email },
@@ -59,9 +52,8 @@ const loginUser = async (email: string, password: string) => {
 };
 
 const editUserName = async (id: number, name: string) => {
-  if (!name) throw new AppError('Name is required', 400);
-  const updated = await updateUserName(id, name);
-  return updated;
+  if (!name) throw new AppError(Errors.NAME_REQUIRED);
+  return updateUserName(id, name);
 };
 
 export { createNewUser, loginUser, editUserName };
