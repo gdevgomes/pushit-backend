@@ -24,6 +24,8 @@ npm-debug.log*
 # claude
 .claude/
 claude.js
+script.sh
+showQRcode.html
 
 # chaves ssh
 github
