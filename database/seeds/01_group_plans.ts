@@ -1,10 +1,8 @@
-import db from '../src/config/db';
+import type { Knex } from 'knex';
 
-beforeAll(async () => {
-  await db.migrate.rollback({ all: true });
-  await db.migrate.latest();
-
-  await db('group_plans').insert([
+export async function seed(knex: Knex): Promise<void> {
+  await knex('group_plans').del();
+  await knex('group_plans').insert([
     {
       id: 1,
       slug: 'starter',
@@ -46,15 +44,4 @@ beforeAll(async () => {
       trial_months: 0,
     },
   ]);
-});
-
-afterEach(async () => {
-  await db('notification_logs').del();
-  await db('notifications').del();
-  await db('payments').del();
-  await db('users_groups').del();
-  await db('group_subscriptions').del();
-  await db('groups').del();
-  await db('user_profiles').del();
-  await db('users').del();
-});
+}

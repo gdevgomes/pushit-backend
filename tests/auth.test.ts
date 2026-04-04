@@ -23,7 +23,7 @@ describe('POST /auth/register', () => {
     const res = await request(app).post('/auth/register').send(baseUser);
 
     expect(res.status).toBe(409);
-    expect(res.body.message).toBe('User Exists');
+    expect(res.body.message).toBe('User already exists');
   });
 
   it('retorna 400 quando senhas não coincidem', async () => {
@@ -32,7 +32,7 @@ describe('POST /auth/register', () => {
       .send({ ...baseUser, confirmPassword: 'outra_senha' });
 
     expect(res.status).toBe(400);
-    expect(res.body.message).toBe("Password don't match");
+    expect(res.body.message).toBe('Passwords do not match');
   });
 
   it('retorna 400 quando password está ausente', async () => {
