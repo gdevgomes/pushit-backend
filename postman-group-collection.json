@@ -8,6 +8,7 @@
     { "key": "baseUrl", "value": "http://localhost:3000", "type": "string" },
     { "key": "token",   "value": "", "type": "string" },
     { "key": "groupId", "value": "1", "type": "string" },
+    { "key": "notificationId", "value": "", "type": "string" },
     { "key": "pixPaymentId",    "value": "", "type": "string" },
     { "key": "pixQrCodeId",     "value": "", "type": "string" },
     { "key": "abacatePayApiKey","value": "", "type": "string" }
@@ -91,6 +92,19 @@
       "name": "Grupos",
       "item": [
         {
+          "name": "Buscar grupo por código",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/group/code/:code",
+              "host": ["{{baseUrl}}"],
+              "path": ["group", "code", ":code"],
+              "variable": [{ "key": "code", "value": "ABC123" }]
+            }
+          }
+        },
+        {
           "name": "Criar grupo",
           "event": [
             {
@@ -166,7 +180,7 @@
           }
         },
         {
-          "name": "Sair do grupo",
+          "name": "Sair do grupo (membro)",
           "request": {
             "method": "POST",
             "header": [
@@ -181,6 +195,26 @@
             "body": {
               "mode": "raw",
               "raw": "{\n  \"groupId\": {{groupId}}\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "Sair do grupo (dono — transfere ownership)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json", "type": "text" },
+              { "key": "Authorization", "value": "Bearer {{token}}", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/group/{{groupId}}/leave",
+              "host": ["{{baseUrl}}"],
+              "path": ["group", "{{groupId}}", "leave"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nextOwnerId\": 2\n}",
               "options": { "raw": { "language": "json" } }
             }
           }
@@ -335,6 +369,21 @@
       "item": [
         {
           "name": "Criar notificação",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.id) {",
+                  "  pm.collectionVariables.set('notificationId', json.id);",
+                  "  console.log('notificationId salvo:', json.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -362,6 +411,38 @@
               "raw": "{{baseUrl}}/group/{{groupId}}/notifications",
               "host": ["{{baseUrl}}"],
               "path": ["group", "{{groupId}}", "notifications"]
+            }
+          }
+        },
+        {
+          "name": "Editar notificação",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json", "type": "text" },
+              { "key": "Authorization", "value": "Bearer {{token}}", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/group/{{groupId}}/notifications/{{notificationId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["group", "{{groupId}}", "notifications", "{{notificationId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Nome atualizado\",\n  \"description\": \"Nova descrição\",\n  \"month\": 9,\n  \"day\": 20\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "Deletar notificação",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}", "type": "text" }],
+            "url": {
+              "raw": "{{baseUrl}}/group/{{groupId}}/notifications/{{notificationId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["group", "{{groupId}}", "notifications", "{{notificationId}}"]
             }
           }
         }
