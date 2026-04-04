@@ -1,10 +1,14 @@
 import { Router } from 'express';
 import * as notificationController from '../controllers/notificationController';
 import authMiddleware from '../middlewares/authMiddleware';
+import { validate } from '../middlewares/validate';
+import { CreateNotificationSchema, UpdateNotificationSchema, PaginationSchema } from '../schemas';
 
 const notificationRouter = Router({ mergeParams: true });
 
-notificationRouter.post('/', authMiddleware, notificationController.createNotification);
-notificationRouter.get('/', authMiddleware, notificationController.getNotifications);
+notificationRouter.post('/', authMiddleware, validate(CreateNotificationSchema), notificationController.createNotification);
+notificationRouter.get('/', authMiddleware, validate(PaginationSchema, 'query'), notificationController.getNotifications);
+notificationRouter.put('/:notificationId', authMiddleware, validate(UpdateNotificationSchema), notificationController.updateNotification);
+notificationRouter.delete('/:notificationId', authMiddleware, notificationController.deleteNotification);
 
 export { notificationRouter };

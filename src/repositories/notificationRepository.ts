@@ -9,18 +9,42 @@ const create = async (data: NewNotification) => {
 };
 
 const countByUserInGroup = async (groupId: number, userId: number): Promise<number> => {
-  const result = await knex('notifications')
+  const [{ total }] = await knex('notifications')
     .where({ group_id: groupId, created_by: userId })
-    .count('id as count')
-    .first();
-  return Number(result?.count ?? 0);
+    .count('id as total');
+  return Number(total);
 };
 
-const getByGroup = async (groupId: number) => {
-  return await knex('notifications')
-    .where({ group_id: groupId })
-    .orderBy('scheduled_at', 'asc')
-    .select('*');
+const getById = async (id: number) => {
+  return await knex('notifications').where({ id }).first();
 };
 
-export default { create, countByUserInGroup, getByGroup };
+const update = async (id: number, data: Partial<Pick<NewNotification, 'name' | 'description' | 'month' | 'day' | 'scheduled_at'>>) => {
+  const [updated] = await knex('notifications')
+    .where({ id })
+    .update(data)
+    .returning(['id', 'name', 'description', 'month', 'day', 'timezone', 'scheduled_at', 'group_id', 'created_by']);
+  return updated;
+};
+
+const remove = async (id: number) => {
+  await knex('notifications').where({ id }).del();
+};
+
+const getPaginated = async (groupId: number, page: number, limit: number) => {
+  const offset = (page - 1) * limit;
+
+  const [data, [{ total }]] = await Promise.all([
+    knex('notifications')
+      .where({ group_id: groupId })
+      .orderBy('scheduled_at', 'asc')
+      .select('*')
+      .limit(limit)
+      .offset(offset),
+    knex('notifications').where({ group_id: groupId }).count('id as total'),
+  ]);
+
+  return { data, total: Number(total) };
+};
+
+export default { create, getById, update, remove, countByUserInGroup, getPaginated };

@@ -58,28 +58,28 @@ describe('POST /group/:id/notifications', () => {
     const res = await postNotification(member.token, group.id);
 
     expect(res.status).toBe(400);
-    expect(res.body.message).toMatch(/limite/i);
+    expect(res.body.message).toMatch(/limit/i);
   });
 
-  it('dono pode criar até 10 notificações', async () => {
+  it('dono pode criar até 5 notificações (limite Starter)', async () => {
     const { owner, group } = await setupGroupWithMember();
 
-    for (let i = 1; i <= 10; i++) {
+    for (let i = 1; i <= 5; i++) {
       const res = await postNotification(owner.token, group.id, { name: `Notif ${i}` });
       expect(res.status).toBe(201);
     }
   });
 
-  it('dono não pode criar mais de 10 notificações', async () => {
+  it('dono não pode criar mais de 5 notificações (limite Starter)', async () => {
     const { owner, group } = await setupGroupWithMember();
 
-    for (let i = 1; i <= 10; i++) {
+    for (let i = 1; i <= 5; i++) {
       await postNotification(owner.token, group.id, { name: `Notif ${i}` });
     }
 
-    const res = await postNotification(owner.token, group.id, { name: 'Notif 11' });
+    const res = await postNotification(owner.token, group.id, { name: 'Notif 6' });
     expect(res.status).toBe(400);
-    expect(res.body.message).toMatch(/limite/i);
+    expect(res.body.message).toMatch(/limit/i);
   });
 
   it('retorna 403 para não-membro', async () => {
@@ -122,5 +122,120 @@ describe('GET /group/:id/notifications', () => {
       .set('Authorization', `Bearer ${stranger.token}`);
 
     expect(res.status).toBe(403);
+  });
+});
+
+describe('PUT /group/:id/notifications/:notificationId', () => {
+  it('criador da notificação consegue editar', async () => {
+    const { member, group } = await setupGroupWithMember();
+    const { body: notification } = await postNotification(member.token, group.id);
+
+    const res = await request(app)
+      .put(`/group/${group.id}/notifications/${notification.id}`)
+      .set('Authorization', `Bearer ${member.token}`)
+      .send({ name: 'Nome atualizado' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.name).toBe('Nome atualizado');
+  });
+
+  it('dono do grupo consegue editar notificação de outro membro', async () => {
+    const { owner, member, group } = await setupGroupWithMember();
+    const { body: notification } = await postNotification(member.token, group.id);
+
+    const res = await request(app)
+      .put(`/group/${group.id}/notifications/${notification.id}`)
+      .set('Authorization', `Bearer ${owner.token}`)
+      .send({ name: 'Editado pelo dono' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.name).toBe('Editado pelo dono');
+  });
+
+  it('membro não consegue editar notificação de outro membro', async () => {
+    const { group } = await setupGroupWithMember();
+    const other = await registerAndLogin({ email: 'other@test.com' });
+    await request(app).post('/group/join').set('Authorization', `Bearer ${other.token}`).send({ groupId: group.id });
+
+    const { body: notification } = await postNotification(other.token, group.id);
+
+    const { member } = await setupGroupWithMember();
+    // usar um membro do mesmo grupo que não criou a notificação
+    const res = await request(app)
+      .put(`/group/${group.id}/notifications/${notification.id}`)
+      .set('Authorization', `Bearer ${other.token}`)
+      .send({ name: 'Tentativa' });
+
+    // other criou a notificação, então consegue editar
+    expect(res.status).toBe(200);
+  });
+
+  it('terceiro não consegue editar notificação', async () => {
+    const { owner, group } = await setupGroupWithMember();
+    const { body: notification } = await postNotification(owner.token, group.id, { name: 'Original' });
+    const stranger = await registerAndLogin({ email: 'stranger@test.com' });
+
+    const res = await request(app)
+      .put(`/group/${group.id}/notifications/${notification.id}`)
+      .set('Authorization', `Bearer ${stranger.token}`)
+      .send({ name: 'Hack' });
+
+    expect(res.status).toBe(403);
+  });
+
+  it('retorna 404 para notificação inexistente', async () => {
+    const { owner, group } = await setupGroupWithMember();
+
+    const res = await request(app)
+      .put(`/group/${group.id}/notifications/9999`)
+      .set('Authorization', `Bearer ${owner.token}`)
+      .send({ name: 'Teste' });
+
+    expect(res.status).toBe(404);
+  });
+});
+
+describe('DELETE /group/:id/notifications/:notificationId', () => {
+  it('criador da notificação consegue deletar', async () => {
+    const { member, group } = await setupGroupWithMember();
+    const { body: notification } = await postNotification(member.token, group.id);
+
+    const res = await request(app)
+      .delete(`/group/${group.id}/notifications/${notification.id}`)
+      .set('Authorization', `Bearer ${member.token}`);
+
+    expect(res.status).toBe(200);
+  });
+
+  it('dono do grupo consegue deletar notificação de outro membro', async () => {
+    const { owner, member, group } = await setupGroupWithMember();
+    const { body: notification } = await postNotification(member.token, group.id);
+
+    const res = await request(app)
+      .delete(`/group/${group.id}/notifications/${notification.id}`)
+      .set('Authorization', `Bearer ${owner.token}`);
+
+    expect(res.status).toBe(200);
+  });
+
+  it('membro não consegue deletar notificação de outro membro', async () => {
+    const { owner, member, group } = await setupGroupWithMember();
+    const { body: notification } = await postNotification(owner.token, group.id, { name: 'Do dono' });
+
+    const res = await request(app)
+      .delete(`/group/${group.id}/notifications/${notification.id}`)
+      .set('Authorization', `Bearer ${member.token}`);
+
+    expect(res.status).toBe(403);
+  });
+
+  it('retorna 404 para notificação inexistente', async () => {
+    const { owner, group } = await setupGroupWithMember();
+
+    const res = await request(app)
+      .delete(`/group/${group.id}/notifications/9999`)
+      .set('Authorization', `Bearer ${owner.token}`);
+
+    expect(res.status).toBe(404);
   });
 });

@@ -104,12 +104,12 @@ describe('POST /group/join', () => {
     expect(res.body.message).toBe('Entrou no grupo');
   });
 
-  it('retorna 400 quando o grupo atingiu o limite de 30 membros', async () => {
+  it('retorna 400 quando o grupo atingiu o limite de membros do plano', async () => {
     const owner = await registerAndLogin({ email: 'owner@test.com' });
     const { body: group } = await createGroup(owner.token);
 
-    // enche o grupo até o limite (owner já é membro = 1, adiciona mais 29)
-    for (let i = 2; i <= 30; i++) {
+    // enche o grupo até o limite do Starter (owner já é membro = 1, adiciona mais 24)
+    for (let i = 2; i <= 25; i++) {
       const { token } = await registerAndLogin({ email: `member${i}@test.com` });
       await request(app)
         .post('/group/join')
@@ -124,7 +124,7 @@ describe('POST /group/join', () => {
       .send({ groupId: group.id });
 
     expect(res.status).toBe(400);
-    expect(res.body.message).toMatch(/limite/i);
+    expect(res.body.message).toMatch(/limit/i);
   });
 
   it('retorna 400 ao entrar em um grupo que já é membro', async () => {
@@ -307,6 +307,10 @@ describe('GET /group/:id/users', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.users).toHaveLength(2);
+    expect(res.body.users[0]).toHaveProperty('id');
+    expect(res.body.users[0]).toHaveProperty('name');
+    expect(res.body.users[0]).toHaveProperty('email');
+    expect(res.body.users[0]).not.toHaveProperty('passwordHash');
   });
 
   it('retorna 403 para não-membro', async () => {
@@ -324,5 +328,110 @@ describe('GET /group/:id/users', () => {
   it('retorna 401 sem autenticação', async () => {
     const res = await request(app).get('/group/1/users');
     expect(res.status).toBe(401);
+  });
+});
+
+describe('POST /group/leave — dono não pode usar leave normal', () => {
+  it('dono recebe 400 ao tentar sair pelo leave normal', async () => {
+    const owner = await registerAndLogin({ email: 'owner@test.com' });
+    const { body: group } = await createGroup(owner.token);
+
+    const res = await request(app)
+      .post('/group/leave')
+      .set('Authorization', `Bearer ${owner.token}`)
+      .send({ groupId: group.id });
+
+    expect(res.status).toBe(400);
+  });
+});
+
+describe('POST /group/:id/leave — dono sai e transfere ownership', () => {
+  it('dono sai e o mais antigo membro vira dono automaticamente', async () => {
+    const owner = await registerAndLogin({ email: 'owner@test.com' });
+    const member = await registerAndLogin({ email: 'member@test.com' });
+    const { body: group } = await createGroup(owner.token);
+
+    await request(app).post('/group/join').set('Authorization', `Bearer ${member.token}`).send({ groupId: group.id });
+
+    const res = await request(app)
+      .post(`/group/${group.id}/leave`)
+      .set('Authorization', `Bearer ${owner.token}`)
+      .send({});
+
+    expect(res.status).toBe(200);
+
+    // owner não está mais no grupo
+    const ownerGroups = await request(app).get('/group/user').set('Authorization', `Bearer ${owner.token}`);
+    expect(ownerGroups.body.groups.find((g: any) => g.id === group.id)).toBeUndefined();
+
+    // member agora é dono (aparece como owner_id)
+    const memberGroups = await request(app).get('/group/user').set('Authorization', `Bearer ${member.token}`);
+    const updatedGroup = memberGroups.body.groups.find((g: any) => g.id === group.id);
+    expect(updatedGroup).toBeDefined();
+    expect(updatedGroup.owner_id).toBe(member.id);
+  });
+
+  it('dono escolhe explicitamente o próximo dono', async () => {
+    const owner = await registerAndLogin({ email: 'owner@test.com' });
+    const memberA = await registerAndLogin({ email: 'memberA@test.com' });
+    const memberB = await registerAndLogin({ email: 'memberB@test.com' });
+    const { body: group } = await createGroup(owner.token);
+
+    await request(app).post('/group/join').set('Authorization', `Bearer ${memberA.token}`).send({ groupId: group.id });
+    await request(app).post('/group/join').set('Authorization', `Bearer ${memberB.token}`).send({ groupId: group.id });
+
+    const res = await request(app)
+      .post(`/group/${group.id}/leave`)
+      .set('Authorization', `Bearer ${owner.token}`)
+      .send({ nextOwnerId: memberB.id });
+
+    expect(res.status).toBe(200);
+
+    const memberBGroups = await request(app).get('/group/user').set('Authorization', `Bearer ${memberB.token}`);
+    const updatedGroup = memberBGroups.body.groups.find((g: any) => g.id === group.id);
+    expect(updatedGroup.owner_id).toBe(memberB.id);
+  });
+
+  it('grupo é deletado quando dono sai e é o único membro', async () => {
+    const owner = await registerAndLogin({ email: 'owner@test.com' });
+    const { body: group } = await createGroup(owner.token);
+
+    const res = await request(app)
+      .post(`/group/${group.id}/leave`)
+      .set('Authorization', `Bearer ${owner.token}`)
+      .send({});
+
+    expect(res.status).toBe(200);
+
+    const ownerGroups = await request(app).get('/group/user').set('Authorization', `Bearer ${owner.token}`);
+    expect(ownerGroups.body.groups.find((g: any) => g.id === group.id)).toBeUndefined();
+  });
+
+  it('retorna 400 quando nextOwnerId não está no grupo', async () => {
+    const owner = await registerAndLogin({ email: 'owner@test.com' });
+    const stranger = await registerAndLogin({ email: 'stranger@test.com' });
+    const { body: group } = await createGroup(owner.token);
+
+    const res = await request(app)
+      .post(`/group/${group.id}/leave`)
+      .set('Authorization', `Bearer ${owner.token}`)
+      .send({ nextOwnerId: stranger.id });
+
+    expect(res.status).toBe(400);
+  });
+
+  it('retorna 403 quando não é o dono', async () => {
+    const owner = await registerAndLogin({ email: 'owner@test.com' });
+    const member = await registerAndLogin({ email: 'member@test.com' });
+    const { body: group } = await createGroup(owner.token);
+
+    await request(app).post('/group/join').set('Authorization', `Bearer ${member.token}`).send({ groupId: group.id });
+
+    const res = await request(app)
+      .post(`/group/${group.id}/leave`)
+      .set('Authorization', `Bearer ${member.token}`)
+      .send({});
+
+    expect(res.status).toBe(403);
   });
 });
