@@ -1,21 +1,7 @@
 import { NextFunction, Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
 
-//  how to use
-//  new AppError('Message', 200);
-export class AppError extends Error {
-  public readonly statusCode: number;
-  public readonly isOperational: boolean;
-
-  constructor(message: string, statusCode = 400) {
-    super(message);
-
-    this.statusCode = statusCode;
-    this.isOperational = true;
-
-    Object.setPrototypeOf(this, new.target.prototype);
-  }
-}
+export { AppError } from '../errors';
 
 export interface KnexError extends Error {
   code?: string;
@@ -34,6 +20,10 @@ export function isKnexError(error: unknown): error is KnexError {
   );
 }
 
+const isDev = process.env.NODE_ENV !== 'production' && process.env.NODE_ENV !== 'test';
+
+import { AppError } from '../errors';
+
 const errorHandler = (
   error: Error,
   _req: Request,
@@ -42,22 +32,30 @@ const errorHandler = (
 ) => {
   if (error instanceof AppError) {
     return res.status(error.statusCode).json({
+      code: error.code,
+      key: error.key,
       message: error.message,
+      ...(error.detail && { detail: error.detail }),
+      ...(isDev && { stack: error.stack }),
     });
   }
 
   if (isKnexError(error)) {
     return res.status(StatusCodes.BAD_REQUEST).json({
-      message: 'Knex Database Error',
-      error,
+      code: 0,
+      key: 'DATABASE_ERROR',
+      message: 'Database error',
+      ...(isDev && { detail: error.message, stack: error.stack }),
     });
   }
 
   console.error('[Unhandled Error]', error);
 
   return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+    code: 0,
+    key: 'INTERNAL_ERROR',
     message: 'Internal server error',
-    error,
+    ...(isDev && { stack: (error as Error).stack }),
   });
 };
 

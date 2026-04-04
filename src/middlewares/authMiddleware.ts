@@ -1,27 +1,20 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { AppError } from './errorHandler';
+import { AppError, Errors } from '../errors';
 
 const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization;
-  if (!authHeader) {
-    return next(new AppError('Token not provided', 401));
-  }
+  if (!authHeader) return next(new AppError(Errors.UNAUTHORIZED));
 
   const token = authHeader.split(' ')[1];
-  if (!token || typeof token !== 'string') {
-    return next(new AppError('Invalid token', 401));
-  }
+  if (!token || typeof token !== 'string') return next(new AppError(Errors.UNAUTHORIZED));
 
   try {
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET || 'default_secret'
-    );
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'default_secret');
     req.user = decoded;
     next();
-  } catch (error) {
-    return next(new AppError('Invalid token', 401));
+  } catch {
+    return next(new AppError(Errors.UNAUTHORIZED));
   }
 };
 

@@ -1,12 +1,31 @@
-export type User = NewUser & {
-  id: string;
+export interface User {
+  id: number;
+  email: string;
+  passwordHash: string;
+}
+
+export interface UserProfile {
+  id: number;
+  user_id: number;
+  name: string;
+  timezone: string;
+}
+
+export interface PublicUser {
+  id: number;
+  name: string;
+  email: string;
+  timezone: string;
+}
+
+export type NewUser = {
+  email: string;
   passwordHash: string;
 };
 
-export type NewUser = {
+export type NewUserProfile = {
+  user_id: number;
   name: string;
-  email: string;
-  passwordHash: string;
   timezone: string;
 };
 
