@@ -85,6 +85,10 @@ export const OwnerLeaveSchema = z.object({
   nextOwnerId: z.coerce.number().int().positive().optional(),
 });
 
+export const MonthParamSchema = z.object({
+  month: z.coerce.number().int().min(1).max(12),
+});
+
 // Pagination
 export const PaginationSchema = z.object({
   page: z.coerce.number().int().min(1).default(1),

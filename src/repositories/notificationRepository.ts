@@ -47,4 +47,11 @@ const getPaginated = async (groupId: number, page: number, limit: number) => {
   return { data, total: Number(total) };
 };
 
-export default { create, getById, update, remove, countByUserInGroup, getPaginated };
+const getByMonth = async (groupId: number, month: number) => {
+  return await knex('notifications')
+    .where({ group_id: groupId, month })
+    .orderBy('day', 'asc')
+    .select('*');
+};
+
+export default { create, getById, update, remove, countByUserInGroup, getPaginated, getByMonth };

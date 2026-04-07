@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import notificationService from '../services/notificationService';
-import { Pagination } from '../schemas';
+import { Pagination, MonthParamSchema } from '../schemas';
 
 export const createNotification = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -25,6 +25,24 @@ export const getNotifications = async (req: Request, res: Response, next: NextFu
       limit
     );
     res.status(200).json({ notifications: data, pagination: { page, limit, total } });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getNotificationsByMonth = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const parsed = MonthParamSchema.safeParse({ month: req.params.month });
+    if (!parsed.success) {
+      res.status(400).json({ code: 0, key: 'VALIDATION_ERROR', message: 'month: must be an integer between 1 and 12' });
+      return;
+    }
+    const notifications = await notificationService.getNotificationsByMonth(
+      Number(req.params.id),
+      req.user!,
+      parsed.data.month
+    );
+    res.status(200).json({ notifications });
   } catch (error) {
     next(error);
   }
