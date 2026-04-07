@@ -1,7 +1,7 @@
 import db from '../src/config/db';
 
 beforeAll(async () => {
-  await db.migrate.rollback({ all: true });
+  await db.migrate.rollback({ all: true } as Record<string, unknown>);
   await db.migrate.latest();
 
   await db('group_plans').insert([
