@@ -30,3 +30,13 @@ export type NewUserProfile = {
 };
 
 export type FindUser = { email: string };
+
+export interface UserProvider {
+  id: number;
+  user_id: number;
+  provider: string;
+  provider_id: string;
+  email?: string | null;
+}
+
+export type NewUserProvider = Omit<UserProvider, 'id'>;

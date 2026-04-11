@@ -47,11 +47,24 @@ const getPaginated = async (groupId: number, page: number, limit: number) => {
   return { data, total: Number(total) };
 };
 
-const getByMonth = async (groupId: number, month: number) => {
+const getByUserAndMonth = async (userId: number, month: number) => {
   return await knex('notifications')
-    .where({ group_id: groupId, month })
-    .orderBy('day', 'asc')
-    .select('*');
+    .join('users_groups', 'notifications.group_id', 'users_groups.group_id')
+    .join('groups', 'notifications.group_id', 'groups.id')
+    .where('users_groups.user_id', userId)
+    .where('notifications.month', month)
+    .orderBy(['groups.name', 'notifications.day'])
+    .select(
+      'notifications.id',
+      'notifications.name',
+      'notifications.description',
+      'notifications.month',
+      'notifications.day',
+      'notifications.scheduled_at',
+      'notifications.group_id',
+      'notifications.created_by',
+      'groups.name as group_name'
+    );
 };
 
-export default { create, getById, update, remove, countByUserInGroup, getPaginated, getByMonth };
+export default { create, getById, update, remove, countByUserInGroup, getPaginated, getByUserAndMonth };

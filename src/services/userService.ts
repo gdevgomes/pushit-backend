@@ -6,8 +6,10 @@ import {
   createProfile,
   updateProfile,
 } from '../repositories/userRepository';
+import providerRepository from '../repositories/providerRepository';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 
 async function hashPassword(password: string) {
   const saltRounds = 10;
@@ -94,4 +96,57 @@ const editProfile = async (id: number, data: EditProfileData) => {
   return updateProfile(id, profileFields, userFields);
 };
 
-export { createNewUser, loginUser, editProfile };
+type ProviderLoginData = {
+  provider: string;
+  provider_id: string;
+  email: string;
+  name: string;
+  timezone?: string;
+};
+
+const loginWithProvider = async (data: ProviderLoginData) => {
+  const existing = await providerRepository.findByProvider(data.provider, data.provider_id);
+
+  let userId: number;
+  let userEmail: string;
+  let userName: string;
+  let userTimezone: string;
+
+  if (existing) {
+    const user = await findUserById(existing.user_id);
+    if (!user) throw new AppError(Errors.USER_NOT_FOUND);
+    userId = user.id;
+    userEmail = user.email;
+    userName = user.name;
+    userTimezone = user.timezone;
+  } else {
+    const byEmail = await findUserByEmail({ email: data.email });
+
+    if (byEmail) {
+      userId = byEmail.id;
+      userEmail = byEmail.email;
+      userName = byEmail.name;
+      userTimezone = byEmail.timezone;
+    } else {
+      const unusableHash = await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 10);
+      const user = await createUser({ email: data.email, passwordHash: unusableHash });
+      await createProfile({ user_id: user.id, name: data.name, timezone: data.timezone ?? 'UTC' });
+      userId = user.id;
+      userEmail = user.email;
+      userName = data.name;
+      userTimezone = data.timezone ?? 'UTC';
+    }
+
+    await providerRepository.create({ user_id: userId, provider: data.provider, provider_id: data.provider_id, email: data.email ?? null });
+  }
+
+  const token = jwt.sign(
+    { id: userId, email: userEmail },
+    process.env.JWT_SECRET || 'default_secret',
+    { expiresIn: '1d' }
+  );
+
+  return { token, user: { id: userId, email: userEmail, name: userName, timezone: userTimezone } };
+};
+
+export { createNewUser, loginUser, editProfile, loginWithProvider };

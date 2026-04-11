@@ -3,6 +3,7 @@ import {
   createNewUser,
   loginUser,
   editProfile as editProfileService,
+  loginWithProvider,
 } from '../services/userService';
 import { AppError, Errors } from '../errors';
 
@@ -37,4 +38,14 @@ const editProfile = async (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
-export { createAuth, login, editProfile };
+const loginWithGoogle = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { provider_id, email, name, timezone } = req.body;
+    const result = await loginWithProvider({ provider: 'google', provider_id, email, name, timezone });
+    return res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export { createAuth, login, editProfile, loginWithGoogle };

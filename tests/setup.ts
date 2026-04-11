@@ -1,3 +1,4 @@
+import { beforeAll, afterEach } from 'vitest';
 import db from '../src/config/db';
 
 beforeAll(async () => {
@@ -55,6 +56,7 @@ afterEach(async () => {
   await db('users_groups').del();
   await db('group_subscriptions').del();
   await db('groups').del();
+  await db('user_providers').del();
   await db('user_profiles').del();
   await db('users').del();
 });

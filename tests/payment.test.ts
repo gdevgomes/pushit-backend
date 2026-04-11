@@ -1,16 +1,17 @@
 import request from 'supertest';
 import { app } from '../src/app';
 import { registerAndLogin } from './helpers/auth';
+import { vi, describe, it, expect } from 'vitest';
 
-jest.mock('../src/utils/abacatePayClient', () => ({
-  createPixQrCode: jest.fn().mockResolvedValue({
+vi.mock('../src/utils/abacatePayClient', () => ({
+  createPixQrCode: vi.fn().mockResolvedValue({
     id: 'pix_test_123',
     status: 'PENDING',
     brCode: '00020101021226830014br.gov.bcb.pix0136test',
     brCodeBase64: 'data:image/png;base64,iVBORw0KGgo=',
     expiresAt: new Date(Date.now() + 86400000).toISOString(),
   }),
-  checkPixStatus: jest.fn(),
+  checkPixStatus: vi.fn(),
 }));
 
 async function setupOwnerAndGroup() {

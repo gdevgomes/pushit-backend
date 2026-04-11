@@ -8,7 +8,6 @@ const notificationRouter = Router({ mergeParams: true });
 
 notificationRouter.post('/', authMiddleware, validate(CreateNotificationSchema), notificationController.createNotification);
 notificationRouter.get('/', authMiddleware, validate(PaginationSchema, 'query'), notificationController.getNotifications);
-notificationRouter.get('/month/:month', authMiddleware, notificationController.getNotificationsByMonth);
 notificationRouter.put('/:notificationId', authMiddleware, validate(UpdateNotificationSchema), notificationController.updateNotification);
 notificationRouter.delete('/:notificationId', authMiddleware, notificationController.deleteNotification);
 

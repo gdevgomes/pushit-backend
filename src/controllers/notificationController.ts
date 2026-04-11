@@ -30,24 +30,6 @@ export const getNotifications = async (req: Request, res: Response, next: NextFu
   }
 };
 
-export const getNotificationsByMonth = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const parsed = MonthParamSchema.safeParse({ month: req.params.month });
-    if (!parsed.success) {
-      res.status(400).json({ code: 0, key: 'VALIDATION_ERROR', message: 'month: must be an integer between 1 and 12' });
-      return;
-    }
-    const notifications = await notificationService.getNotificationsByMonth(
-      Number(req.params.id),
-      req.user!,
-      parsed.data.month
-    );
-    res.status(200).json({ notifications });
-  } catch (error) {
-    next(error);
-  }
-};
-
 export const updateNotification = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const updated = await notificationService.updateNotification(
@@ -57,6 +39,20 @@ export const updateNotification = async (req: Request, res: Response, next: Next
       req.user!
     );
     res.status(200).json(updated);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getUserNotifications = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const parsed = MonthParamSchema.safeParse({ month: req.query['month'] ?? new Date().getMonth() + 1 });
+    if (!parsed.success) {
+      res.status(400).json({ code: 0, key: 'VALIDATION_ERROR', message: 'month: must be an integer between 1 and 12' });
+      return;
+    }
+    const notifications = await notificationService.getUserNotificationsByMonth(req.user!, parsed.data.month);
+    res.status(200).json({ notifications, month: parsed.data.month });
   } catch (error) {
     next(error);
   }

@@ -1,3 +1,4 @@
+import { vi, describe, it, expect, beforeEach } from 'vitest';
 import request from 'supertest';
 import { app } from '../src/app';
 
@@ -84,6 +85,58 @@ describe('POST /auth/login', () => {
     });
 
     expect(res.status).toBe(401);
+  });
+});
+
+describe('POST /auth/google', () => {
+  const googleUser = {
+    provider_id: 'google-uid-123',
+    email: 'google@test.com',
+    name: 'Google User',
+    timezone: 'America/Sao_Paulo',
+  };
+
+  it('cria usuário novo via Google e retorna token e perfil', async () => {
+    const res = await request(app).post('/auth/google').send(googleUser);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty('token');
+    expect(typeof res.body.token).toBe('string');
+    expect(res.body.user).toMatchObject({ email: googleUser.email, name: googleUser.name });
+    expect(res.body.user).toHaveProperty('id');
+    expect(res.body.user).not.toHaveProperty('passwordHash');
+  });
+
+  it('retorna o mesmo usuário ao logar com o mesmo provider_id', async () => {
+    const first = await request(app).post('/auth/google').send(googleUser);
+    const second = await request(app).post('/auth/google').send(googleUser);
+
+    expect(second.status).toBe(200);
+    expect(second.body.user.id).toBe(first.body.user.id);
+  });
+
+  it('vincula provider a usuário já cadastrado com o mesmo e-mail', async () => {
+    await request(app).post('/auth/register').send({
+      ...baseUser,
+      email: googleUser.email,
+      confirmPassword: baseUser.password,
+    });
+
+    const res = await request(app).post('/auth/google').send(googleUser);
+
+    expect(res.status).toBe(200);
+    expect(res.body.user.email).toBe(googleUser.email);
+  });
+
+  it('usuários de providers diferentes com mesmo e-mail são vinculados à mesma conta', async () => {
+    const first = await request(app).post('/auth/google').send(googleUser);
+    const second = await request(app).post('/auth/google').send({
+      ...googleUser,
+      provider_id: 'google-uid-456',
+    });
+
+    expect(second.status).toBe(200);
+    expect(second.body.user.id).toBe(first.body.user.id);
   });
 });
 

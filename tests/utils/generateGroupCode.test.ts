@@ -1,3 +1,4 @@
+import { vi, describe, it, expect } from 'vitest';
 import { generateCode } from '../../src/utils/generateGroupCode';
 
 const BASE62 = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';

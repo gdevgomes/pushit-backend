@@ -52,13 +52,6 @@ const getNotificationsByGroup = async (groupId: number, user: any, page: number,
   return await notificationRepository.getPaginated(groupId, page, limit);
 };
 
-const getNotificationsByMonth = async (groupId: number, user: any, month: number) => {
-  const inGroup = await groupService.isUserInGroup(user.id, groupId);
-  if (!inGroup) throw new AppError(Errors.GROUP_ACCESS_DENIED);
-
-  return await notificationRepository.getByMonth(groupId, month);
-};
-
 const updateNotification = async (
   groupId: number,
   notificationId: number,
@@ -88,6 +81,10 @@ const updateNotification = async (
   return await notificationRepository.update(notificationId, updateData);
 };
 
+const getUserNotificationsByMonth = async (user: any, month: number) => {
+  return await notificationRepository.getByUserAndMonth(user.id, month);
+};
+
 const deleteNotification = async (groupId: number, notificationId: number, user: any) => {
   const inGroup = await groupService.isUserInGroup(user.id, groupId);
   if (!inGroup) throw new AppError(Errors.GROUP_ACCESS_DENIED);
@@ -103,4 +100,4 @@ const deleteNotification = async (groupId: number, notificationId: number, user:
   await notificationRepository.remove(notificationId);
 };
 
-export default { createNotification, getNotificationsByGroup, getNotificationsByMonth, updateNotification, deleteNotification };
+export default { createNotification, getNotificationsByGroup, getUserNotificationsByMonth, updateNotification, deleteNotification };
