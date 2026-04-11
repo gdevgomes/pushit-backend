@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import { env } from '../config/env';
 import groupRepository from '../repositories/groupRepository';
 import subscriptionRepository from '../repositories/subscriptionRepository';
 import paymentRepository from '../repositories/paymentRepository';
@@ -60,18 +61,14 @@ const getGroupPayments = async (groupId: number, user: any, page: number, limit:
 };
 
 const handleWebhook = async (rawBody: string, signatureHeader: string): Promise<void> => {
-  const webhookSecret = process.env.ABACATE_PAY_WEBHOOK_SECRET;
-
-  if (webhookSecret) {
-    const expectedSignature = crypto
-      .createHmac('sha256', webhookSecret)
-      .update(Buffer.from(rawBody, 'utf8'))
-      .digest('base64');
-    const A = Buffer.from(expectedSignature);
-    const B = Buffer.from(signatureHeader);
-    const isValid = A.length === B.length && crypto.timingSafeEqual(A, B);
-    if (!isValid) throw new AppError(Errors.WEBHOOK_INVALID_SIGNATURE);
-  }
+  const expectedSignature = crypto
+    .createHmac('sha256', env.abacatePayWebhookSecret)
+    .update(Buffer.from(rawBody, 'utf8'))
+    .digest('base64');
+  const A = Buffer.from(expectedSignature);
+  const B = Buffer.from(signatureHeader);
+  const isValid = A.length === B.length && crypto.timingSafeEqual(A, B);
+  if (!isValid) throw new AppError(Errors.WEBHOOK_INVALID_SIGNATURE);
 
   const payload = JSON.parse(rawBody);
   const { event, data } = payload;

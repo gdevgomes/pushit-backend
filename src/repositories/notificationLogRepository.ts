@@ -11,17 +11,17 @@ const create = async (data: NewNotificationLog): Promise<NotificationLog> => {
 const getPaginatedByGroup = async (group_id: number, page: number, limit: number) => {
   const offset = (page - 1) * limit;
 
-  const [data, [{ total }]] = await Promise.all([
+  const [data, countRows] = await Promise.all([
     knex('notification_logs')
       .where({ group_id })
       .orderBy('sent_at', 'desc')
       .select('*')
       .limit(limit)
       .offset(offset),
-    knex('notification_logs').where({ group_id }).count('id as total'),
+    knex('notification_logs').where({ group_id }).count<{ total: string }[]>('id as total'),
   ]);
 
-  return { data: data as NotificationLog[], total: Number(total) };
+  return { data: data as NotificationLog[], total: Number(countRows[0]?.total ?? 0) };
 };
 
 export default { create, getPaginatedByGroup };

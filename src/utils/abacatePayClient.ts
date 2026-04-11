@@ -1,18 +1,13 @@
 import { AppError, Errors } from '../errors';
+import { env } from '../config/env';
 
 const BASE_URL = 'https://api.abacatepay.com/v1';
-
-const getApiKey = () => {
-  const apiKey = process.env.ABACATE_PAY_API_KEY;
-  if (!apiKey) throw new AppError(Errors.ABACATE_PAY_KEY_MISSING);
-  return apiKey;
-};
 
 const abacateRequest = async (method: string, path: string, body?: unknown) => {
   const res = await fetch(`${BASE_URL}${path}`, {
     method,
     headers: {
-      'Authorization': `Bearer ${getApiKey()}`,
+      'Authorization': `Bearer ${env.abacatePayApiKey}`,
       'Content-Type': 'application/json',
     },
     ...(body ? { body: JSON.stringify(body) } : {}),

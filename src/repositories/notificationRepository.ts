@@ -9,10 +9,10 @@ const create = async (data: NewNotification) => {
 };
 
 const countByUserInGroup = async (groupId: number, userId: number): Promise<number> => {
-  const [{ total }] = await knex('notifications')
+  const rows = await knex('notifications')
     .where({ group_id: groupId, created_by: userId })
-    .count('id as total');
-  return Number(total);
+    .count<{ total: string }[]>('id as total');
+  return Number(rows[0]?.total ?? 0);
 };
 
 const getById = async (id: number) => {
@@ -34,17 +34,17 @@ const remove = async (id: number) => {
 const getPaginated = async (groupId: number, page: number, limit: number) => {
   const offset = (page - 1) * limit;
 
-  const [data, [{ total }]] = await Promise.all([
+  const [data, countRows] = await Promise.all([
     knex('notifications')
       .where({ group_id: groupId })
       .orderBy('scheduled_at', 'asc')
       .select('*')
       .limit(limit)
       .offset(offset),
-    knex('notifications').where({ group_id: groupId }).count('id as total'),
+    knex('notifications').where({ group_id: groupId }).count<{ total: string }[]>('id as total'),
   ]);
 
-  return { data, total: Number(total) };
+  return { data, total: Number(countRows[0]?.total ?? 0) };
 };
 
 const getByUserAndMonth = async (userId: number, month: number) => {

@@ -80,7 +80,7 @@ const ownerLeaveGroup = async (groupId: number, nextOwnerId: number | undefined,
     nextOwnerId = oldest.user_id;
   }
 
-  await groupRepository.updateGroup(groupId, { owner_id: nextOwnerId });
+  await groupRepository.updateGroup(groupId, { owner_id: nextOwnerId! });
   await groupRepository.removeUserFromGroup(user.id, groupId);
 };
 

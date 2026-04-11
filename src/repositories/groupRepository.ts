@@ -7,13 +7,13 @@ const createGroup = async (data: NewGroup) => {
     .insert({ ...data, code: 'temp' })
     .returning(['id', 'name', 'description', 'owner_id']);
 
-  const code = generateCode(inserted.id);
+  const code = generateCode(inserted!.id);
   const [updated] = await knex('groups')
-    .where({ id: inserted.id })
+    .where({ id: inserted!.id })
     .update({ code })
     .returning(['id', 'name', 'description', 'code', 'owner_id']);
 
-  return updated;
+  return updated!;
 };
 
 const addUserToGroup = async (user_id: number, group_id: number) => {
@@ -55,7 +55,7 @@ const getPaginatedGroupsByUser = async (user_id: number, page: number, limit: nu
       .join('users_groups', 'groups.id', 'users_groups.group_id')
       .where('users_groups.user_id', user_id);
 
-  const [data, [{ total }]] = await Promise.all([
+  const [data, countRows] = await Promise.all([
     baseQuery()
       .join('users as owner', 'groups.owner_id', 'owner.id')
       .join('user_profiles as owner_profile', 'owner.id', 'owner_profile.user_id')
@@ -74,21 +74,23 @@ const getPaginatedGroupsByUser = async (user_id: number, page: number, limit: nu
       )
       .limit(limit)
       .offset(offset),
-    baseQuery().count('groups.id as total'),
+    baseQuery().count<{ total: string }[]>('groups.id as total'),
   ]);
 
-  return { data, total: Number(total) };
+  return { data, total: Number(countRows[0]?.total ?? 0) };
 };
 
 const countUsersByGroup = async (group_id: number): Promise<number> => {
-  const [{ total }] = await knex('users_groups').where({ group_id }).count('* as total');
-  return Number(total);
+  const rows = await knex('users_groups')
+    .where({ group_id })
+    .count<{ total: string }[]>('* as total');
+  return Number(rows[0]?.total ?? 0);
 };
 
 const getPaginatedUsersByGroup = async (group_id: number, page: number, limit: number) => {
   const offset = (page - 1) * limit;
 
-  const [data, [{ total }]] = await Promise.all([
+  const [data, countRows] = await Promise.all([
     knex('users')
       .join('users_groups', 'users.id', 'users_groups.user_id')
       .join('user_profiles', 'users.id', 'user_profiles.user_id')
@@ -96,10 +98,12 @@ const getPaginatedUsersByGroup = async (group_id: number, page: number, limit: n
       .select('users.id', 'user_profiles.name', 'users.email', 'user_profiles.timezone')
       .limit(limit)
       .offset(offset),
-    knex('users_groups').where({ group_id }).count('* as total'),
+    knex('users_groups')
+      .where({ group_id })
+      .count<{ total: string }[]>('* as total'),
   ]);
 
-  return { data, total: Number(total) };
+  return { data, total: Number(countRows[0]?.total ?? 0) };
 };
 
 // Kept for addUserToGroup member-limit check

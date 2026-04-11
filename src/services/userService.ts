@@ -10,6 +10,7 @@ import providerRepository from '../repositories/providerRepository';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
+import { env } from '../config/env';
 
 async function hashPassword(password: string) {
   const saltRounds = 10;
@@ -47,7 +48,7 @@ const loginUser = async (email: string, password: string) => {
 
   const token = jwt.sign(
     { id: user.id, email: user.email },
-    process.env.JWT_SECRET || 'default_secret',
+    env.jwtSecret,
     { expiresIn: '1d' }
   );
 
@@ -142,7 +143,7 @@ const loginWithProvider = async (data: ProviderLoginData) => {
 
   const token = jwt.sign(
     { id: userId, email: userEmail },
-    process.env.JWT_SECRET || 'default_secret',
+    env.jwtSecret,
     { expiresIn: '1d' }
   );
 

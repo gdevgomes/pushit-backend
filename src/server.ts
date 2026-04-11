@@ -1,10 +1,13 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
+import { validateEnv, env } from './config/env';
+validateEnv();
+
 import { Request, Response } from 'express';
 import { app } from './app';
 
-const PORT = Number(process.env.PORT) || 3000;
+const PORT = env.port;
 
 app.get('/', (req: Request, res: Response) => {
   res.send({ message: 'Backend running ok' }).status(200);

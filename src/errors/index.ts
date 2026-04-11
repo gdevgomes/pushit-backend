@@ -62,7 +62,7 @@ export class AppError extends Error {
     this.code = error.code;
     this.key = error.key;
     this.statusCode = error.status;
-    this.detail = detail;
+    if (detail !== undefined) this.detail = detail;
     Object.setPrototypeOf(this, new.target.prototype);
   }
 }

@@ -17,16 +17,16 @@ const findByExternalId = async (external_id: string): Promise<Payment | undefine
 const getPaginatedByGroupId = async (group_id: number, page: number, limit: number) => {
   const offset = (page - 1) * limit;
 
-  const [data, [{ total }]] = await Promise.all([
+  const [data, countRows] = await Promise.all([
     knex('payments')
       .where({ group_id })
       .orderBy('created_at', 'desc')
       .limit(limit)
       .offset(offset),
-    knex('payments').where({ group_id }).count('id as total'),
+    knex('payments').where({ group_id }).count<{ total: string }[]>('id as total'),
   ]);
 
-  return { data: data as Payment[], total: Number(total) };
+  return { data: data as Payment[], total: Number(countRows[0]?.total ?? 0) };
 };
 
 const findPendingByGroupId = async (group_id: number): Promise<Payment | undefined> => {
