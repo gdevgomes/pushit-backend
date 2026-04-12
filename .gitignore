@@ -30,3 +30,4 @@ showQRcode.html
 # chaves ssh
 github
 github.pub
+coverage/.tmp/coverage-0.json
