@@ -30,8 +30,8 @@ const editProfile = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = req.user?.id;
     if (!userId) throw new AppError(Errors.UNAUTHORIZED);
-    const { name, timezone, email, currentPassword, password } = req.body;
-    const updated = await editProfileService(userId, { name, timezone, email, currentPassword, password });
+    const { name, timezone, email, currentPassword, password, push_token } = req.body;
+    const updated = await editProfileService(userId, { name, timezone, email, currentPassword, password, push_token });
     return res.status(200).json(updated);
   } catch (error) {
     next(error);

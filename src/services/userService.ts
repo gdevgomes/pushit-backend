@@ -69,14 +69,16 @@ type EditProfileData = {
   email?: string;
   currentPassword?: string;
   password?: string;
+  push_token?: string;
 };
 
 const editProfile = async (id: number, data: EditProfileData) => {
-  const profileFields: Partial<{ name: string; timezone: string }> = {};
+  const profileFields: Partial<{ name: string; timezone: string; push_token: string }> = {};
   const userFields: Partial<{ email: string; passwordHash: string }> = {};
 
   if (data.name) profileFields.name = data.name;
   if (data.timezone) profileFields.timezone = data.timezone;
+  if (data.push_token !== undefined) profileFields.push_token = data.push_token;
 
   if (data.email) {
     const existing = await findUserByEmail({ email: data.email });

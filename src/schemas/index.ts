@@ -22,13 +22,15 @@ export const EditProfileSchema = z
     currentPassword: z.string().optional(),
     password: z.string().min(6).optional(),
     confirmPassword: z.string().optional(),
+    push_token: z.string().optional(),
   })
   .refine(
     (d) =>
       d.name !== undefined ||
       d.timezone !== undefined ||
       d.email !== undefined ||
-      d.password !== undefined,
+      d.password !== undefined ||
+      d.push_token !== undefined,
     {
       message: 'At least one field must be provided',
     }

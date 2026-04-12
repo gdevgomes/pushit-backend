@@ -13,7 +13,7 @@ const findUserByEmail = async (findUser: FindUser) => {
   return knex('users')
     .join('user_profiles', 'users.id', 'user_profiles.user_id')
     .where('users.email', findUser.email)
-    .select('users.id', 'users.email', 'users.passwordHash', 'user_profiles.name', 'user_profiles.timezone')
+    .select('users.id', 'users.email', 'users.passwordHash', 'user_profiles.name', 'user_profiles.timezone', 'user_profiles.push_token')
     .first();
 };
 
@@ -21,13 +21,13 @@ const findUserById = async (id: number): Promise<PublicUser | undefined> => {
   return knex('users')
     .join('user_profiles', 'users.id', 'user_profiles.user_id')
     .where('users.id', id)
-    .select('users.id', 'users.email', 'user_profiles.name', 'user_profiles.timezone')
+    .select('users.id', 'users.email', 'user_profiles.name', 'user_profiles.timezone', 'user_profiles.push_token')
     .first();
 };
 
 const updateProfile = async (
   id: number,
-  profileFields: Partial<{ name: string; timezone: string }>,
+  profileFields: Partial<{ name: string; timezone: string; push_token: string }>,
   userFields: Partial<{ email: string; passwordHash: string }>,
 ): Promise<PublicUser | undefined> => {
   if (Object.keys(profileFields).length > 0) {

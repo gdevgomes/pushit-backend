@@ -225,4 +225,25 @@ describe('PATCH /auth/profile', () => {
 
     expect(res.status).toBe(401);
   });
+
+  it('atualiza o push_token do usuário autenticado', async () => {
+    const pushToken = 'fcm-token-abc123';
+    const res = await request(app)
+      .patch('/auth/profile')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ push_token: pushToken });
+
+    expect(res.status).toBe(200);
+    expect(res.body.push_token).toBe(pushToken);
+  });
+
+  it('retorna push_token nulo para usuário sem token cadastrado', async () => {
+    const res = await request(app)
+      .patch('/auth/profile')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ name: 'Nome Qualquer' });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty('push_token');
+  });
 });

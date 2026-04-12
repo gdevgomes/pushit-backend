@@ -9,6 +9,7 @@ export interface UserProfile {
   user_id: number;
   name: string;
   timezone: string;
+  push_token?: string;
 }
 
 export interface PublicUser {
@@ -16,6 +17,7 @@ export interface PublicUser {
   name: string;
   email: string;
   timezone: string;
+  push_token?: string;
 }
 
 export type NewUser = {
