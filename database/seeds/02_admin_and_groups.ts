@@ -97,4 +97,11 @@ export async function seed(knex: Knex): Promise<void> {
     { group_id: 3, plan_id: 2, status: 'active', monthly_amount: 50,  trial_ends_at: now,              paid_until: oneYearFromNow    },
     { group_id: 4, plan_id: 1, status: 'trial',  monthly_amount: 30,  trial_ends_at: threeMonthsFromNow, paid_until: null            },
   ]);
+
+  if (knex.client.config.client === 'pg') {
+    await knex.raw(`SELECT setval(pg_get_serial_sequence('users', 'id'), MAX(id)) FROM users`);
+    await knex.raw(`SELECT setval(pg_get_serial_sequence('user_profiles', 'id'), MAX(id)) FROM user_profiles`);
+    await knex.raw(`SELECT setval(pg_get_serial_sequence('groups', 'id'), MAX(id)) FROM groups`);
+    await knex.raw(`SELECT setval(pg_get_serial_sequence('group_subscriptions', 'id'), MAX(id)) FROM group_subscriptions`);
+  }
 }

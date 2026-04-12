@@ -1,6 +1,7 @@
 import type { Knex } from 'knex';
 
 export async function seed(knex: Knex): Promise<void> {
+  await knex('group_subscriptions').del();
   await knex('group_plans').del();
   await knex('group_plans').insert([
     {
@@ -44,4 +45,8 @@ export async function seed(knex: Knex): Promise<void> {
       trial_months: 0,
     },
   ]);
+
+  if (knex.client.config.client === 'pg') {
+    await knex.raw(`SELECT setval(pg_get_serial_sequence('group_plans', 'id'), MAX(id)) FROM group_plans`);
+  }
 }
