@@ -196,6 +196,51 @@ describe('PUT /group/:id/notifications/:notificationId', () => {
   });
 });
 
+describe('GET /notifications', () => {
+  it('retorna notificações do mês atual quando month não é informado', async () => {
+    const { owner, group } = await setupGroupWithMember();
+    const currentMonth = new Date().getMonth() + 1;
+    await postNotification(owner.token, group.id, { name: 'Notif mês atual', month: currentMonth });
+
+    const res = await request(app)
+      .get('/notifications')
+      .set('Authorization', `Bearer ${owner.token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty('notifications');
+    expect(res.body).toHaveProperty('month', currentMonth);
+  });
+
+  it('retorna notificações filtradas pelo mês informado', async () => {
+    const { owner, group } = await setupGroupWithMember();
+    await postNotification(owner.token, group.id, { name: 'Notif agosto', month: 8 });
+
+    const res = await request(app)
+      .get('/notifications?month=8')
+      .set('Authorization', `Bearer ${owner.token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.month).toBe(8);
+    expect(res.body.notifications.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('retorna 400 para mês inválido', async () => {
+    const { owner } = await setupGroupWithMember();
+
+    const res = await request(app)
+      .get('/notifications?month=13')
+      .set('Authorization', `Bearer ${owner.token}`);
+
+    expect(res.status).toBe(400);
+    expect(res.body.key).toBe('VALIDATION_ERROR');
+  });
+
+  it('retorna 401 sem autenticação', async () => {
+    const res = await request(app).get('/notifications');
+    expect(res.status).toBe(401);
+  });
+});
+
 describe('DELETE /group/:id/notifications/:notificationId', () => {
   it('criador da notificação consegue deletar', async () => {
     const { member, group } = await setupGroupWithMember();

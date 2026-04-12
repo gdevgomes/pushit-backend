@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import request from 'supertest';
 import { app } from '../src/app';
 import { registerAndLogin } from './helpers/auth';
@@ -133,5 +134,73 @@ describe('GET /payment/group/:groupId', () => {
   it('retorna 401 sem autenticação', async () => {
     const res = await request(app).get('/payment/group/1');
     expect(res.status).toBe(401);
+  });
+});
+
+describe('POST /payment/webhook', () => {
+  function makeSignature(body: string) {
+    return crypto
+      .createHmac('sha256', 'test_webhook_secret')
+      .update(Buffer.from(body, 'utf8'))
+      .digest('base64');
+  }
+
+  it('processa webhook válido e retorna received: true', async () => {
+    const payload = JSON.stringify({ event: 'other.event', data: {} });
+    const signature = makeSignature(payload);
+
+    const res = await request(app)
+      .post('/payment/webhook')
+      .set('x-webhook-signature', signature)
+      .set('Content-Type', 'application/json')
+      .send(payload);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ received: true });
+  });
+
+  it('retorna 401 com assinatura inválida', async () => {
+    const payload = JSON.stringify({ event: 'transparent.completed', data: { id: 'fake' } });
+
+    const res = await request(app)
+      .post('/payment/webhook')
+      .set('x-webhook-signature', 'invalid_signature')
+      .set('Content-Type', 'application/json')
+      .send(payload);
+
+    expect(res.status).toBe(401);
+  });
+
+  it('marca pagamento como pago ao receber transparent.completed', async () => {
+    const { owner, group } = await setupOwnerAndGroup();
+
+    const pixRes = await request(app)
+      .post(`/payment/group/${group.id}/pix`)
+      .set('Authorization', `Bearer ${owner.token}`);
+
+    const externalId = pixRes.body.id;
+
+    // mock createPixQrCode retorna id 'pix_test_123', mas o external_id salvo no banco é o id do payment
+    // o campo external_id é o id retornado pelo abacatePay, que no mock é 'pix_test_123'
+    const payload = JSON.stringify({
+      event: 'transparent.completed',
+      data: { id: 'pix_test_123' },
+    });
+    const signature = makeSignature(payload);
+
+    const webhookRes = await request(app)
+      .post('/payment/webhook')
+      .set('x-webhook-signature', signature)
+      .set('Content-Type', 'application/json')
+      .send(payload);
+
+    expect(webhookRes.status).toBe(200);
+    expect(webhookRes.body).toEqual({ received: true });
+
+    const paymentsRes = await request(app)
+      .get(`/payment/group/${group.id}`)
+      .set('Authorization', `Bearer ${owner.token}`);
+
+    expect(paymentsRes.body.payments[0].status).toBe('paid');
   });
 });
