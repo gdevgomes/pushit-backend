@@ -15,9 +15,9 @@ export function validateEnv(): void {
 }
 
 export const env = {
-  nodeEnv: (process.env['NODE_ENV'] ?? 'development') as 'development' | 'production',
-  jwtSecret: process.env['JWT_SECRET']!,
-  port: Number(process.env['PORT']) || 3000,
-  abacatePayApiKey: process.env['ABACATE_PAY_API_KEY']!,
-  abacatePayWebhookSecret: process.env['ABACATE_PAY_WEBHOOK_SECRET']!,
+  get nodeEnv() { return (process.env['NODE_ENV'] ?? 'development') as 'development' | 'production'; },
+  get jwtSecret() { return process.env['JWT_SECRET']!; },
+  get port() { return Number(process.env['PORT']) || 3000; },
+  get abacatePayApiKey() { return process.env['ABACATE_PAY_API_KEY']!; },
+  get abacatePayWebhookSecret() { return process.env['ABACATE_PAY_WEBHOOK_SECRET']!; },
 };
