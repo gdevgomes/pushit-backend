@@ -32,3 +32,4 @@ github
 github.pub
 coverage/.tmp/coverage-0.json
 docker-command.txt
+blackbox-tests.html
