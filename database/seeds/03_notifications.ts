@@ -150,6 +150,10 @@ export async function seed(knex: Knex): Promise<void> {
 
   await knex('notifications').insert(notifications);
 
+  if (knex.client.config.client === 'pg') {
+    await knex.raw(`SELECT setval(pg_get_serial_sequence('notifications', 'id'), MAX(id)) FROM notifications`);
+  }
+
   // Logs para as notificações passadas do grupo 1
   // (Roberto e Fernanda = antes da semana; Carlos = esta semana passado)
   await knex('notification_logs').insert([

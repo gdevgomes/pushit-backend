@@ -13,7 +13,7 @@ const encodeBase62 = (num: number) => {
 
 const generateCode = (id: number) => {
   const encoded = encodeBase62(id);
-  return encoded.padStart(6, '0');
+  return encoded.padStart(6, '0').toUpperCase();
 };
 
 export { generateCode };

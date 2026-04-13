@@ -3,17 +3,34 @@ import morgan from 'morgan';
 import cors from 'cors';
 import routes from './routes';
 import errorHandler from './middlewares/errorHandler';
+import { rateLimit } from 'express-rate-limit';
+import { env } from './config/env';
+
+const isProd = env.nodeEnv === 'production';
 
 const app = express();
 
-app.use(express.json({
-  verify: (req: any, _res, buf) => {
-    req.rawBody = buf.toString('utf8');
-  },
-}));
+const limiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 1500,
+});
+
+app.use(limiter);
+
+app.use(
+  express.json({
+    verify: (req: any, _res, buf) => {
+      req.rawBody = buf.toString('utf8');
+    },
+  })
+);
+
 app.use(express.urlencoded({ extended: true }));
-app.use(morgan('dev'));
-app.use(cors());
+app.use(morgan(isProd ? 'combined' : 'dev'));
+app.use(cors({
+  origin: isProd ? (process.env['ALLOWED_ORIGINS'] ?? '').split(',').filter(Boolean) : '*',
+  credentials: true,
+}));
 
 app.use(routes);
 
