@@ -1,4 +1,4 @@
-import { vi, describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import request from 'supertest';
 import { app } from '../src/app';
 import { registerAndLogin } from './helpers/auth';
@@ -45,6 +45,55 @@ describe('POST /group — restrição de trial', () => {
 
     expect(res.status).toBe(400);
     expect(res.body.message).toMatch(/trial/i);
+  });
+});
+
+describe('POST /group — plan_slug', () => {
+  it('cria com enterprise: status active, monthly_amount null, sem restrição de trial', async () => {
+    const owner = await registerAndLogin({ email: 'owner@test.com' });
+
+    const res = await request(app)
+      .post('/group')
+      .set('Authorization', `Bearer ${owner.token}`)
+      .send({ name: 'Grupo Enterprise', plan_slug: 'enterprise' });
+
+    expect(res.status).toBe(201);
+
+    const sub = await request(app)
+      .get(`/group/${res.body.id}/subscription`)
+      .set('Authorization', `Bearer ${owner.token}`);
+
+    expect(sub.body.status).toBe('active');
+    expect(sub.body.monthly_amount).toBe(0);
+  });
+
+  it('enterprise permite criar múltiplos grupos', async () => {
+    const owner = await registerAndLogin({ email: 'owner@test.com' });
+
+    const first = await request(app)
+      .post('/group')
+      .set('Authorization', `Bearer ${owner.token}`)
+      .send({ name: 'Grupo 1', plan_slug: 'enterprise' });
+
+    expect(first.status).toBe(201);
+
+    const second = await request(app)
+      .post('/group')
+      .set('Authorization', `Bearer ${owner.token}`)
+      .send({ name: 'Grupo 2', plan_slug: 'enterprise' });
+
+    expect(second.status).toBe(201);
+  });
+
+  it('retorna 400 para plan_slug inválido', async () => {
+    const owner = await registerAndLogin({ email: 'owner@test.com' });
+
+    const res = await request(app)
+      .post('/group')
+      .set('Authorization', `Bearer ${owner.token}`)
+      .send({ name: 'Grupo X', plan_slug: 'invalido' });
+
+    expect(res.status).toBe(400);
   });
 });
 

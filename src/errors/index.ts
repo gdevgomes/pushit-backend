@@ -43,6 +43,7 @@ export const Errors = {
 
   // Plans (5xxx)
   STARTER_PLAN_NOT_FOUND: { code: 5001, key: 'STARTER_PLAN_NOT_FOUND', status: 500, message: 'Starter plan not found' },
+  PLAN_NOT_FOUND:         { code: 5002, key: 'PLAN_NOT_FOUND',         status: 400, message: 'Plan not found' },
 
   // External / Infrastructure (6xxx)
   ABACATE_PAY_KEY_MISSING:  { code: 6001, key: 'ABACATE_PAY_KEY_MISSING',  status: 500, message: 'AbacatePay API key is not configured' },

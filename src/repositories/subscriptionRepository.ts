@@ -5,10 +5,11 @@ const create = async (
   group_id: number,
   trial_ends_at: Date,
   plan_id: number,
-  monthly_amount: number,
+  monthly_amount: number | null,
+  status?: string,
 ): Promise<GroupSubscription> => {
   const [subscription] = await knex('group_subscriptions')
-    .insert({ group_id, trial_ends_at: trial_ends_at.toISOString(), plan_id, monthly_amount })
+    .insert({ group_id, trial_ends_at: trial_ends_at.toISOString(), plan_id, monthly_amount, ...(status ? { status } : {}) })
     .returning(['id', 'group_id', 'plan_id', 'status', 'trial_ends_at', 'monthly_amount']);
   return subscription;
 };

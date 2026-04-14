@@ -13,17 +13,25 @@ const isUserInGroup = async (
 };
 
 const createGroup = async (newGroup: NewGroup, user: any): Promise<Group> => {
+  const { plan_slug, ...groupData } = newGroup;
+
+  if (plan_slug) {
+    const plan = await planRepository.getBySlug(plan_slug);
+    if (!plan) throw new AppError(Errors.PLAN_NOT_FOUND);
+
+    const group = await groupRepository.createGroup({ ...groupData, owner_id: user.id });
+    await groupRepository.addUserToGroup(user.id, group.id);
+    await subscriptionRepository.create(group.id, new Date(), plan.id, plan.monthly_amount ?? 0, 'active');
+    return group;
+  }
+
   const hasTrial = await subscriptionRepository.hasTrialGroupByOwner(user.id);
   if (hasTrial) throw new AppError(Errors.TRIAL_GROUP_EXISTS);
 
   const starterPlan = await planRepository.getBySlug('starter');
   if (!starterPlan) throw new AppError(Errors.STARTER_PLAN_NOT_FOUND);
 
-  const group = await groupRepository.createGroup({
-    ...newGroup,
-    owner_id: user.id,
-  });
-
+  const group = await groupRepository.createGroup({ ...groupData, owner_id: user.id });
   await groupRepository.addUserToGroup(user.id, group.id);
 
   const trialEndsAt = new Date();

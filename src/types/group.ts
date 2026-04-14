@@ -10,6 +10,7 @@ export interface NewGroup {
   name: string;
   description?: string;
   owner_id: number;
+  plan_slug?: string;
 }
 
 export interface UserGroup {

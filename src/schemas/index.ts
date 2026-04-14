@@ -48,6 +48,7 @@ export const EditProfileSchema = z
 export const CreateGroupSchema = z.object({
   name: z.string().min(1).max(100),
   description: z.string().max(255).optional(),
+  plan_slug: z.string().optional(),
 });
 
 export const UpdateGroupSchema = z
