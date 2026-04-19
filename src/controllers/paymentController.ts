@@ -35,7 +35,7 @@ export const getGroupPayments = async (req: Request, res: Response, next: NextFu
 
 export const handleWebhook = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const rawBody: string = (req as any).rawBody ?? JSON.stringify(req.body);
+    const rawBody: string = req.rawBody ?? JSON.stringify(req.body);
     const signature = (req.headers['x-webhook-signature'] as string) ?? '';
     await paymentService.handleWebhook(rawBody, signature);
     res.status(200).json({ received: true });

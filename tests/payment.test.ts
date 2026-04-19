@@ -17,14 +17,34 @@ vi.mock('../src/utils/abacatePayClient', () => ({
 
 async function setupOwnerAndGroup() {
   const owner = await registerAndLogin({ email: 'owner@test.com' });
-  const res = await request(app)
+  const groupRes = await request(app)
     .post('/group')
     .set('Authorization', `Bearer ${owner.token}`)
     .send({ name: 'Grupo Teste' });
-  return { owner, group: res.body };
+  const group = groupRes.body;
+  // Upgrade para starter para habilitar pagamento (sand-box é gratuito)
+  await request(app)
+    .post(`/group/${group.id}/upgrade`)
+    .set('Authorization', `Bearer ${owner.token}`)
+    .send({ plan_slug: 'starter' });
+  return { owner, group };
 }
 
 describe('POST /payment/group/:groupId/pix', () => {
+  it('retorna 400 ao tentar gerar PIX para grupo no plano gratuito (sand-box)', async () => {
+    const owner = await registerAndLogin({ email: 'free@test.com' });
+    const groupRes = await request(app)
+      .post('/group')
+      .set('Authorization', `Bearer ${owner.token}`)
+      .send({ name: 'Grupo Free' });
+
+    const res = await request(app)
+      .post(`/payment/group/${groupRes.body.id}/pix`)
+      .set('Authorization', `Bearer ${owner.token}`);
+
+    expect(res.status).toBe(400);
+  });
+
   it('dono gera QR code PIX e recebe pixBrCode e pixQrCodeBase64', async () => {
     const { owner, group } = await setupOwnerAndGroup();
 

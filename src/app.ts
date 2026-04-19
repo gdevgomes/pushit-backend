@@ -19,7 +19,7 @@ app.use(limiter);
 
 app.use(
   express.json({
-    verify: (req: any, _res, buf) => {
+    verify: (req, _res, buf) => {
       req.rawBody = buf.toString('utf8');
     },
   })

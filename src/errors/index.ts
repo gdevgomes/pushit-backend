@@ -42,8 +42,11 @@ export const Errors = {
   NOTIFICATION_ACCESS_DENIED: { code: 4003, key: 'NOTIFICATION_ACCESS_DENIED', status: 403, message: 'Only the group owner or notification creator can perform this action' },
 
   // Plans (5xxx)
-  STARTER_PLAN_NOT_FOUND: { code: 5001, key: 'STARTER_PLAN_NOT_FOUND', status: 500, message: 'Starter plan not found' },
-  PLAN_NOT_FOUND:         { code: 5002, key: 'PLAN_NOT_FOUND',         status: 400, message: 'Plan not found' },
+  STARTER_PLAN_NOT_FOUND:  { code: 5001, key: 'STARTER_PLAN_NOT_FOUND',  status: 500, message: 'Starter plan not found' },
+  PLAN_NOT_FOUND:          { code: 5002, key: 'PLAN_NOT_FOUND',          status: 400, message: 'Plan not found' },
+  SANDBOX_PLAN_NOT_FOUND:  { code: 5003, key: 'SANDBOX_PLAN_NOT_FOUND',  status: 500, message: 'Sand-box plan not found' },
+  PLAN_NOT_UPGRADEABLE:    { code: 5004, key: 'PLAN_NOT_UPGRADEABLE',    status: 400, message: 'Cannot upgrade to this plan' },
+  SUBSCRIPTION_FREE_PLAN:  { code: 5005, key: 'SUBSCRIPTION_FREE_PLAN',  status: 400, message: 'Cannot generate payment for a free plan group' },
 
   // External / Infrastructure (6xxx)
   ABACATE_PAY_KEY_MISSING:  { code: 6001, key: 'ABACATE_PAY_KEY_MISSING',  status: 500, message: 'AbacatePay API key is not configured' },

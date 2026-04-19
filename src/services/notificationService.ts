@@ -1,5 +1,4 @@
 import notificationRepository from '../repositories/notificationRepository';
-import notificationLogRepository from '../repositories/notificationLogRepository';
 import groupRepository from '../repositories/groupRepository';
 import subscriptionRepository from '../repositories/subscriptionRepository';
 import planRepository from '../repositories/planRepository';
@@ -8,11 +7,12 @@ import { findUserById } from '../repositories/userRepository';
 import { AppError, Errors } from '../errors';
 import { Notification, NewNotification } from '../types/notification';
 import { computeScheduledAt } from '../utils/computeScheduledAt';
+import { AuthUser } from '../types/express';
 
 const createNotification = async (
   groupId: number,
   data: Pick<NewNotification, 'name' | 'description' | 'month' | 'day'>,
-  user: any
+  user: AuthUser
 ): Promise<Notification> => {
   const inGroup = await groupService.isUserInGroup(user.id, groupId);
   if (!inGroup) throw new AppError(Errors.GROUP_ACCESS_DENIED);
@@ -45,18 +45,23 @@ const createNotification = async (
   });
 };
 
-const getNotificationsByGroup = async (groupId: number, user: any, page: number, limit: number) => {
+const getNotificationsByGroup = async (groupId: number, user: AuthUser, page: number, limit: number) => {
   const inGroup = await groupService.isUserInGroup(user.id, groupId);
   if (!inGroup) throw new AppError(Errors.GROUP_ACCESS_DENIED);
 
   return await notificationRepository.getPaginated(groupId, page, limit);
 };
 
+type NotificationUpdatePayload = Pick<Partial<NewNotification>, 'name' | 'description' | 'month' | 'day'> & {
+  scheduled_at?: string;
+  timezone?: string;
+};
+
 const updateNotification = async (
   groupId: number,
   notificationId: number,
   data: Pick<Partial<NewNotification>, 'name' | 'description' | 'month' | 'day'>,
-  user: any
+  user: AuthUser
 ) => {
   const inGroup = await groupService.isUserInGroup(user.id, groupId);
   if (!inGroup) throw new AppError(Errors.GROUP_ACCESS_DENIED);
@@ -69,23 +74,24 @@ const updateNotification = async (
   const isCreator = notification.created_by === user.id;
   if (!isOwner && !isCreator) throw new AppError(Errors.NOTIFICATION_ACCESS_DENIED);
 
-  const updateData: any = { ...data };
+  const updateData: NotificationUpdatePayload = { ...data };
   if (data.month !== undefined || data.day !== undefined) {
     const fullUser = await findUserById(user.id);
     const timezone = fullUser?.timezone ?? 'UTC';
     const month = data.month ?? notification.month;
     const day = data.day ?? notification.day;
+    updateData.timezone = timezone;
     updateData.scheduled_at = computeScheduledAt(month, day, timezone).toISOString();
   }
 
   return await notificationRepository.update(notificationId, updateData);
 };
 
-const getUserNotificationsByMonth = async (user: any, month: number) => {
+const getUserNotificationsByMonth = async (user: AuthUser, month: number) => {
   return await notificationRepository.getByUserAndMonth(user.id, month);
 };
 
-const deleteNotification = async (groupId: number, notificationId: number, user: any) => {
+const deleteNotification = async (groupId: number, notificationId: number, user: AuthUser) => {
   const inGroup = await groupService.isUserInGroup(user.id, groupId);
   if (!inGroup) throw new AppError(Errors.GROUP_ACCESS_DENIED);
 

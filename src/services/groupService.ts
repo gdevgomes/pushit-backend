@@ -3,6 +3,7 @@ import subscriptionRepository from '../repositories/subscriptionRepository';
 import planRepository from '../repositories/planRepository';
 import { Group, NewGroup } from '../types/group';
 import { AppError, Errors } from '../errors';
+import { AuthUser } from '../types/express';
 
 const isUserInGroup = async (
   userId: number,
@@ -12,7 +13,9 @@ const isUserInGroup = async (
   return groups.some((g: Group) => g.id === groupId);
 };
 
-const createGroup = async (newGroup: NewGroup, user: any): Promise<Group> => {
+const NON_UPGRADEABLE_SLUGS = ['sand-box', 'enterprise'] as const;
+
+const createGroup = async (newGroup: NewGroup, user: AuthUser): Promise<Group> => {
   const { plan_slug, ...groupData } = newGroup;
 
   if (plan_slug) {
@@ -25,23 +28,32 @@ const createGroup = async (newGroup: NewGroup, user: any): Promise<Group> => {
     return group;
   }
 
-  const hasTrial = await subscriptionRepository.hasTrialGroupByOwner(user.id);
-  if (hasTrial) throw new AppError(Errors.TRIAL_GROUP_EXISTS);
-
-  const starterPlan = await planRepository.getBySlug('starter');
-  if (!starterPlan) throw new AppError(Errors.STARTER_PLAN_NOT_FOUND);
+  const sandBoxPlan = await planRepository.getBySlug('sand-box');
+  if (!sandBoxPlan) throw new AppError(Errors.SANDBOX_PLAN_NOT_FOUND);
 
   const group = await groupRepository.createGroup({ ...groupData, owner_id: user.id });
   await groupRepository.addUserToGroup(user.id, group.id);
-
-  const trialEndsAt = new Date();
-  trialEndsAt.setMonth(trialEndsAt.getMonth() + starterPlan.trial_months);
-  await subscriptionRepository.create(group.id, trialEndsAt, starterPlan.id, starterPlan.monthly_amount!);
+  await subscriptionRepository.create(group.id, new Date(), sandBoxPlan.id, 0, 'active');
 
   return group;
 };
 
-const addUserToGroup = async (groupId: number, user: any): Promise<void> => {
+const upgradeGroup = async (groupId: number, plan_slug: string, user: AuthUser): Promise<void> => {
+  const groups = await groupRepository.getGroupsByUser(user.id);
+  const group = groups.find((g: Group) => g.id === groupId);
+  if (!group) throw new AppError(Errors.GROUP_NOT_FOUND);
+  if (group.owner_id !== user.id) throw new AppError(Errors.NOT_GROUP_OWNER);
+
+  if ((NON_UPGRADEABLE_SLUGS as readonly string[]).includes(plan_slug))
+    throw new AppError(Errors.PLAN_NOT_UPGRADEABLE);
+
+  const plan = await planRepository.getBySlug(plan_slug);
+  if (!plan) throw new AppError(Errors.PLAN_NOT_FOUND);
+
+  await subscriptionRepository.upgrade(groupId, plan.id, plan.monthly_amount!);
+};
+
+const addUserToGroup = async (groupId: number, user: AuthUser): Promise<void> => {
   const alreadyInGroup = await isUserInGroup(user.id, groupId);
   if (alreadyInGroup) throw new AppError(Errors.ALREADY_IN_GROUP);
 
@@ -60,7 +72,7 @@ const addUserToGroup = async (groupId: number, user: any): Promise<void> => {
 
 const removeUserFromGroup = async (
   groupId: number,
-  user: any
+  user: AuthUser
 ): Promise<void> => {
   const alreadyInGroup = await isUserInGroup(user.id, groupId);
   if (!alreadyInGroup) throw new AppError(Errors.NOT_IN_GROUP);
@@ -71,7 +83,7 @@ const removeUserFromGroup = async (
   await groupRepository.removeUserFromGroup(user.id, groupId);
 };
 
-const ownerLeaveGroup = async (groupId: number, nextOwnerId: number | undefined, user: any): Promise<void> => {
+const ownerLeaveGroup = async (groupId: number, nextOwnerId: number | undefined, user: AuthUser): Promise<void> => {
   const group = await groupRepository.getGroupById(groupId);
   if (!group) throw new AppError(Errors.GROUP_NOT_FOUND);
   if (group.owner_id !== user.id) throw new AppError(Errors.NOT_GROUP_OWNER);
@@ -96,7 +108,7 @@ const getGroupsByUser = async (userId: number, page: number, limit: number) => {
   return await groupRepository.getPaginatedGroupsByUser(userId, page, limit);
 };
 
-const getUsersByGroup = async (groupId: number, user: any, page: number, limit: number) => {
+const getUsersByGroup = async (groupId: number, user: AuthUser, page: number, limit: number) => {
   const alreadyInGroup = await isUserInGroup(user.id, groupId);
   if (!alreadyInGroup) throw new AppError(Errors.GROUP_ACCESS_DENIED);
   return await groupRepository.getPaginatedUsersByGroup(groupId, page, limit);
@@ -105,7 +117,7 @@ const getUsersByGroup = async (groupId: number, user: any, page: number, limit: 
 const kickUser = async (
   groupId: number,
   targetUserId: number,
-  requestingUser: any
+  requestingUser: AuthUser
 ): Promise<void> => {
   const groups = await groupRepository.getGroupsByUser(requestingUser.id);
   const group = groups.find((g: Group) => g.id === groupId);
@@ -122,7 +134,7 @@ const kickUser = async (
 const updateGroup = async (
   groupId: number,
   data: Partial<Group>,
-  user: any
+  user: AuthUser
 ): Promise<Group> => {
   const groups = await groupRepository.getGroupsByUser(user.id);
   const group = groups.find((g: Group) => g.id === groupId);
@@ -138,7 +150,7 @@ const getGroupByCode = async (code: string) => {
   return group;
 };
 
-const getSubscription = async (groupId: number, user: any) => {
+const getSubscription = async (groupId: number, user: AuthUser) => {
   const groups = await groupRepository.getGroupsByUser(user.id);
   const group = groups.find((g: Group) => g.id === groupId);
   if (!group) throw new AppError(Errors.GROUP_NOT_FOUND);
@@ -152,6 +164,7 @@ const getSubscription = async (groupId: number, user: any) => {
 
 export default {
   createGroup,
+  upgradeGroup,
   addUserToGroup,
   removeUserFromGroup,
   ownerLeaveGroup,

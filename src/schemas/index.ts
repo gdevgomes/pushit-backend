@@ -1,12 +1,24 @@
 import { z } from 'zod';
 
+const validIanaTimezone = z.string().refine(
+  (tz) => {
+    try {
+      Intl.DateTimeFormat(undefined, { timeZone: tz });
+      return true;
+    } catch {
+      return false;
+    }
+  },
+  { message: 'Invalid IANA timezone' }
+);
+
 // Auth
 export const RegisterSchema = z.object({
   name: z.string().min(2).max(100),
   email: z.email(),
   password: z.string().min(6),
   confirmPassword: z.string().min(1),
-  timezone: z.string().optional().default('UTC'),
+  timezone: validIanaTimezone.optional().default('UTC'),
 });
 
 export const LoginSchema = z.object({
@@ -17,7 +29,7 @@ export const LoginSchema = z.object({
 export const EditProfileSchema = z
   .object({
     name: z.string().min(2).max(100).optional(),
-    timezone: z.string().optional(),
+    timezone: validIanaTimezone.optional(),
     email: z.email().optional(),
     currentPassword: z.string().optional(),
     password: z.string().min(6).optional(),
@@ -43,6 +55,10 @@ export const EditProfileSchema = z
     message: 'Passwords do not match',
     path: ['confirmPassword'],
   });
+
+export const UpgradeGroupSchema = z.object({
+  plan_slug: z.string().min(1),
+});
 
 // Group
 export const CreateGroupSchema = z.object({

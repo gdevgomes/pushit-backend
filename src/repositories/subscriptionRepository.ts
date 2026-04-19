@@ -35,4 +35,13 @@ const updatePaidUntil = async (group_id: number, paid_until: Date): Promise<void
   await knex('group_subscriptions').where({ group_id }).update({ paid_until: paid_until.toISOString() });
 };
 
-export default { create, getByGroupId, hasTrialGroupByOwner, updateStatus, updatePaidUntil };
+const upgrade = async (group_id: number, plan_id: number, monthly_amount: number): Promise<void> => {
+  await knex('group_subscriptions').where({ group_id }).update({
+    plan_id,
+    monthly_amount,
+    status: 'overdue',
+    trial_ends_at: new Date().toISOString(),
+  });
+};
+
+export default { create, getByGroupId, hasTrialGroupByOwner, updateStatus, updatePaidUntil, upgrade };

@@ -44,6 +44,16 @@ export async function seed(knex: Knex): Promise<void> {
       max_notifications_owner: null,
       trial_months: 0,
     },
+    {
+      id: 5,
+      slug: 'sand-box',
+      name: 'Sand-box',
+      monthly_amount: 0,
+      max_members: null,
+      max_notifications_per_member: null,
+      max_notifications_owner: null,
+      trial_months: 0,
+    },
   ]);
 
   if (knex.client.config.client === 'pg') {

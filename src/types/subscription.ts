@@ -7,4 +7,5 @@ export interface GroupSubscription {
   status: SubscriptionStatus;
   trial_ends_at: string;
   monthly_amount: number;
+  paid_until: string | null;
 }

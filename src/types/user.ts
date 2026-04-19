@@ -33,6 +33,14 @@ export type NewUserProfile = {
 
 export type FindUser = { email: string };
 
+export type RegisterInput = {
+  name: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+  timezone?: string;
+};
+
 export interface UserProvider {
   id: number;
   user_id: number;

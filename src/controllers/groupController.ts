@@ -93,3 +93,12 @@ export const getSubscription = async (req: Request, res: Response, next: NextFun
     next(error);
   }
 };
+
+export const upgradeGroup = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    await groupService.upgradeGroup(Number(req.params.id), req.body.plan_slug, req.user!);
+    res.status(200).json({ message: 'Plano atualizado' });
+  } catch (error) {
+    next(error);
+  }
+};

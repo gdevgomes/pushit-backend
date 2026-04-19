@@ -2,7 +2,7 @@ import { Router } from 'express';
 import * as groupController from '../controllers/groupController';
 import authMiddleware from '../middlewares/authMiddleware';
 import { validate } from '../middlewares/validate';
-import { CreateGroupSchema, UpdateGroupSchema, JoinLeaveGroupSchema, OwnerLeaveSchema, PaginationSchema } from '../schemas';
+import { CreateGroupSchema, UpdateGroupSchema, JoinLeaveGroupSchema, OwnerLeaveSchema, PaginationSchema, UpgradeGroupSchema } from '../schemas';
 
 const groupRouter = Router();
 
@@ -16,5 +16,6 @@ groupRouter.get('/:id/users', authMiddleware, validate(PaginationSchema, 'query'
 groupRouter.delete('/:id/users/:userId', authMiddleware, groupController.kickUser);
 groupRouter.post('/:id/leave', authMiddleware, validate(OwnerLeaveSchema), groupController.ownerLeaveGroup);
 groupRouter.get('/:id/subscription', authMiddleware, groupController.getSubscription);
+groupRouter.post('/:id/upgrade', authMiddleware, validate(UpgradeGroupSchema), groupController.upgradeGroup);
 
 export { groupRouter };

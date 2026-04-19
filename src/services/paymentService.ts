@@ -8,11 +8,12 @@ import { createPixQrCode } from '../utils/abacatePayClient';
 import { AppError, Errors } from '../errors';
 import { Payment } from '../types/payment';
 import { Group } from '../types/group';
+import { AuthUser } from '../types/express';
 
 // PIX QR code expires in 24 hours
 const PIX_EXPIRES_IN_SECONDS = 86400;
 
-const createPixPayment = async (groupId: number, user: any): Promise<Payment> => {
+const createPixPayment = async (groupId: number, user: AuthUser): Promise<Payment> => {
   const groups = await groupRepository.getGroupsByUser(user.id);
   const group = groups.find((g: Group) => g.id === groupId);
   if (!group) throw new AppError(Errors.GROUP_NOT_FOUND);
@@ -21,6 +22,7 @@ const createPixPayment = async (groupId: number, user: any): Promise<Payment> =>
   const subscription = await subscriptionRepository.getByGroupId(groupId);
   if (!subscription) throw new AppError(Errors.SUBSCRIPTION_NOT_FOUND);
   if (subscription.status === 'cancelled') throw new AppError(Errors.SUBSCRIPTION_CANCELLED);
+  if (Number(subscription.monthly_amount) <= 0) throw new AppError(Errors.SUBSCRIPTION_FREE_PLAN);
 
   // Return existing pending payment if still valid
   const existing = await paymentRepository.findPendingByGroupId(groupId);
@@ -51,7 +53,7 @@ const createPixPayment = async (groupId: number, user: any): Promise<Payment> =>
   return payment;
 };
 
-const getGroupPayments = async (groupId: number, user: any, page: number, limit: number) => {
+const getGroupPayments = async (groupId: number, user: AuthUser, page: number, limit: number) => {
   const groups = await groupRepository.getGroupsByUser(user.id);
   const group = groups.find((g: Group) => g.id === groupId);
   if (!group) throw new AppError(Errors.GROUP_NOT_FOUND);
@@ -89,7 +91,7 @@ const handleWebhook = async (rawBody: string, signatureHeader: string): Promise<
   const subscription = await subscriptionRepository.getByGroupId(payment.group_id);
   if (!subscription) return;
 
-  const paidUntilSource = (subscription as any).paid_until;
+  const paidUntilSource = subscription.paid_until;
   const base = paidUntilSource && new Date(paidUntilSource) > paidAt
     ? new Date(paidUntilSource)
     : paidAt;

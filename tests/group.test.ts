@@ -109,6 +109,12 @@ describe('POST /group/join', () => {
     const owner = await registerAndLogin({ email: 'owner@test.com' });
     const { body: group } = await createGroup(owner.token);
 
+    // Upgrade para starter (max 25 membros) para ativar o limite
+    await request(app)
+      .post(`/group/${group.id}/upgrade`)
+      .set('Authorization', `Bearer ${owner.token}`)
+      .send({ plan_slug: 'starter' });
+
     // enche o grupo até o limite do Starter (owner já é membro = 1, adiciona mais 24)
     for (let i = 2; i <= 25; i++) {
       const { token } = await registerAndLogin({ email: `member${i}@test.com` });

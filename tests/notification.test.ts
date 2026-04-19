@@ -10,7 +10,7 @@ const baseNotification = {
   day: 15,
 };
 
-async function setupGroupWithMember() {
+async function setupGroupWithMember(planSlug?: string) {
   const owner = await registerAndLogin({ email: 'owner@test.com' });
   const member = await registerAndLogin({ email: 'member@test.com' });
 
@@ -20,6 +20,13 @@ async function setupGroupWithMember() {
     .send({ name: 'Grupo Teste' });
 
   const group = groupRes.body;
+
+  if (planSlug) {
+    await request(app)
+      .post(`/group/${group.id}/upgrade`)
+      .set('Authorization', `Bearer ${owner.token}`)
+      .send({ plan_slug: planSlug });
+  }
 
   await request(app)
     .post('/group/join')
@@ -52,8 +59,8 @@ describe('POST /group/:id/notifications', () => {
     expect(scheduledAt.getUTCHours()).toBe(9);
   });
 
-  it('membro não pode criar mais de 1 notificação', async () => {
-    const { member, group } = await setupGroupWithMember();
+  it('membro não pode criar mais de 1 notificação (limite Starter)', async () => {
+    const { member, group } = await setupGroupWithMember('starter');
 
     await postNotification(member.token, group.id);
     const res = await postNotification(member.token, group.id);
@@ -63,7 +70,7 @@ describe('POST /group/:id/notifications', () => {
   });
 
   it('dono pode criar até 5 notificações (limite Starter)', async () => {
-    const { owner, group } = await setupGroupWithMember();
+    const { owner, group } = await setupGroupWithMember('starter');
 
     for (let i = 1; i <= 5; i++) {
       const res = await postNotification(owner.token, group.id, { name: `Notif ${i}` });
@@ -72,7 +79,7 @@ describe('POST /group/:id/notifications', () => {
   });
 
   it('dono não pode criar mais de 5 notificações (limite Starter)', async () => {
-    const { owner, group } = await setupGroupWithMember();
+    const { owner, group } = await setupGroupWithMember('starter');
 
     for (let i = 1; i <= 5; i++) {
       await postNotification(owner.token, group.id, { name: `Notif ${i}` });

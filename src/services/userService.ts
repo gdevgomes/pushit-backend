@@ -11,13 +11,14 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { env } from '../config/env';
+import { RegisterInput } from '../types/user';
 
 async function hashPassword(password: string) {
   const saltRounds = 10;
   return bcrypt.hash(password, saltRounds);
 }
 
-const createNewUser = async (userData: any) => {
+const createNewUser = async (userData: RegisterInput) => {
   const existing = await findUserByEmail({ email: userData.email });
   if (existing) throw new AppError(Errors.USER_EXISTS);
 
