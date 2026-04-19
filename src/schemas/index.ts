@@ -86,6 +86,7 @@ export const CreateNotificationSchema = z.object({
   description: z.string().max(255).optional(),
   month: z.coerce.number().int().min(1).max(12),
   day: z.coerce.number().int().min(1).max(31),
+  hour: z.coerce.number().int().min(0).max(23).optional(),
 });
 
 export const UpdateNotificationSchema = z
@@ -94,6 +95,7 @@ export const UpdateNotificationSchema = z
     description: z.string().max(255).optional(),
     month: z.coerce.number().int().min(1).max(12).optional(),
     day: z.coerce.number().int().min(1).max(31).optional(),
+    hour: z.coerce.number().int().min(0).max(23).nullable().optional(),
   })
   .refine((d) => Object.values(d).some((v) => v !== undefined), {
     message: 'At least one field must be provided',

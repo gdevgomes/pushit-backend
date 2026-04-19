@@ -4,6 +4,7 @@ export interface Notification {
   description?: string;
   month: number;
   day: number;
+  hour?: number | null;
   timezone: string;
   scheduled_at: string;
   group_id: number;
@@ -15,6 +16,7 @@ export interface NewNotification {
   description?: string;
   month: number;
   day: number;
+  hour?: number | null;
   timezone: string;
   scheduled_at: string;
   group_id: number;

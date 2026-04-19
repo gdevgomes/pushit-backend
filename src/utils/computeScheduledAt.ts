@@ -41,15 +41,15 @@ function zonedToUTC(
 }
 
 /**
- * Returns the next occurrence of 06:00 local time on the given month/day
- * in the specified IANA timezone (e.g. "America/Sao_Paulo").
+ * Returns the next occurrence of the given hour (default 6) local time on the
+ * given month/day in the specified IANA timezone (e.g. "America/Sao_Paulo").
  */
-export function computeScheduledAt(month: number, day: number, timezone: string): Date {
+export function computeScheduledAt(month: number, day: number, timezone: string, hour = 6): Date {
   const now = new Date();
   const currentYear = now.getFullYear();
 
-  const thisYear = zonedToUTC(currentYear, month, day, 6, timezone);
+  const thisYear = zonedToUTC(currentYear, month, day, hour, timezone);
   if (thisYear > now) return thisYear;
 
-  return zonedToUTC(currentYear + 1, month, day, 6, timezone);
+  return zonedToUTC(currentYear + 1, month, day, hour, timezone);
 }

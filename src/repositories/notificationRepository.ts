@@ -4,7 +4,7 @@ import { NewNotification } from '../types/notification';
 const create = async (data: NewNotification) => {
   const [notification] = await knex('notifications')
     .insert(data)
-    .returning(['id', 'name', 'description', 'month', 'day', 'timezone', 'scheduled_at', 'group_id', 'created_by']);
+    .returning(['id', 'name', 'description', 'month', 'day', 'hour', 'timezone', 'scheduled_at', 'group_id', 'created_by']);
   return notification;
 };
 
@@ -19,11 +19,11 @@ const getById = async (id: number) => {
   return await knex('notifications').where({ id }).first();
 };
 
-const update = async (id: number, data: Partial<Pick<NewNotification, 'name' | 'description' | 'month' | 'day' | 'scheduled_at'>>) => {
+const update = async (id: number, data: Partial<Pick<NewNotification, 'name' | 'description' | 'month' | 'day' | 'hour' | 'scheduled_at'>>) => {
   const [updated] = await knex('notifications')
     .where({ id })
     .update(data)
-    .returning(['id', 'name', 'description', 'month', 'day', 'timezone', 'scheduled_at', 'group_id', 'created_by']);
+    .returning(['id', 'name', 'description', 'month', 'day', 'hour', 'timezone', 'scheduled_at', 'group_id', 'created_by']);
   return updated;
 };
 

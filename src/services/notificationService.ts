@@ -11,7 +11,7 @@ import { AuthUser } from '../types/express';
 
 const createNotification = async (
   groupId: number,
-  data: Pick<NewNotification, 'name' | 'description' | 'month' | 'day'>,
+  data: Pick<NewNotification, 'name' | 'description' | 'month' | 'day' | 'hour'>,
   user: AuthUser
 ): Promise<Notification> => {
   const inGroup = await groupService.isUserInGroup(user.id, groupId);
@@ -34,7 +34,8 @@ const createNotification = async (
 
   const fullUser = await findUserById(user.id);
   const timezone = fullUser?.timezone ?? 'UTC';
-  const scheduled_at = computeScheduledAt(data.month, data.day, timezone).toISOString();
+  const hour = data.hour ?? undefined;
+  const scheduled_at = computeScheduledAt(data.month, data.day, timezone, hour).toISOString();
 
   return await notificationRepository.create({
     ...data,
@@ -52,7 +53,7 @@ const getNotificationsByGroup = async (groupId: number, user: AuthUser, page: nu
   return await notificationRepository.getPaginated(groupId, page, limit);
 };
 
-type NotificationUpdatePayload = Pick<Partial<NewNotification>, 'name' | 'description' | 'month' | 'day'> & {
+type NotificationUpdatePayload = Pick<Partial<NewNotification>, 'name' | 'description' | 'month' | 'day' | 'hour'> & {
   scheduled_at?: string;
   timezone?: string;
 };
@@ -60,7 +61,7 @@ type NotificationUpdatePayload = Pick<Partial<NewNotification>, 'name' | 'descri
 const updateNotification = async (
   groupId: number,
   notificationId: number,
-  data: Pick<Partial<NewNotification>, 'name' | 'description' | 'month' | 'day'>,
+  data: Pick<Partial<NewNotification>, 'name' | 'description' | 'month' | 'day' | 'hour'>,
   user: AuthUser
 ) => {
   const inGroup = await groupService.isUserInGroup(user.id, groupId);
@@ -75,13 +76,14 @@ const updateNotification = async (
   if (!isOwner && !isCreator) throw new AppError(Errors.NOTIFICATION_ACCESS_DENIED);
 
   const updateData: NotificationUpdatePayload = { ...data };
-  if (data.month !== undefined || data.day !== undefined) {
+  if (data.month !== undefined || data.day !== undefined || data.hour !== undefined) {
     const fullUser = await findUserById(user.id);
     const timezone = fullUser?.timezone ?? 'UTC';
     const month = data.month ?? notification.month;
     const day = data.day ?? notification.day;
+    const hour = data.hour !== undefined ? (data.hour ?? undefined) : (notification.hour ?? undefined);
     updateData.timezone = timezone;
-    updateData.scheduled_at = computeScheduledAt(month, day, timezone).toISOString();
+    updateData.scheduled_at = computeScheduledAt(month, day, timezone, hour).toISOString();
   }
 
   return await notificationRepository.update(notificationId, updateData);
