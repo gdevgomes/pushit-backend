@@ -6,6 +6,7 @@ import { paymentRouter } from './paymentRoutes';
 import { planRouter } from './planRoutes';
 import authMiddleware from '../middlewares/authMiddleware';
 import { getUserNotifications } from '../controllers/notificationController';
+import { getUserNotificationLogs } from '../controllers/notificationLogController';
 
 const router: Router = Router();
 
@@ -15,6 +16,7 @@ router.use('/auth', authRouter);
 router.use('/group', groupRouter);
 router.use('/group/:id/notifications', notificationRouter);
 router.get('/notifications', authMiddleware, getUserNotifications);
+router.get('/notification-logs', authMiddleware, getUserNotificationLogs);
 router.use('/payment', paymentRouter);
 router.use('/plans', planRouter);
 
