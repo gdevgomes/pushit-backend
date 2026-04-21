@@ -46,10 +46,9 @@ const getByUser = async (userId: number, page: number, limit: number) => {
   const query = knex('notification_logs as nl')
     .join('notifications as n', 'n.id', 'nl.notification_id')
     .join('groups as g', 'g.id', 'nl.group_id')
-    .join('users_groups as ug', (join) =>
-      join.on('ug.group_id', 'nl.group_id').andOn('ug.user_id', knex.raw('?', [userId]))
-    )
+    .join('users_groups as ug', 'ug.group_id', 'nl.group_id')
     .where('nl.status', 'sent')
+    .where('ug.user_id', userId)
     .orderBy('nl.sent_at', 'desc');
 
   const [data, countRows] = await Promise.all([
