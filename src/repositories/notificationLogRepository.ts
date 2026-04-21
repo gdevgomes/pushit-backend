@@ -43,17 +43,17 @@ const getByNotificationId = async (notification_id: number, page: number, limit:
 const getByUser = async (userId: number, page: number, limit: number) => {
   const offset = (page - 1) * limit;
 
-  const query = knex('notification_logs as nl')
+  const baseQuery = knex('notification_logs as nl')
     .join('notifications as n', 'n.id', 'nl.notification_id')
     .join('groups as g', 'g.id', 'nl.group_id')
     .join('users_groups as ug', 'ug.group_id', 'nl.group_id')
     .where('nl.status', 'sent')
-    .where('ug.user_id', userId)
-    .orderBy('nl.sent_at', 'desc');
+    .where('ug.user_id', userId);
 
   const [data, countRows] = await Promise.all([
-    query
+    baseQuery
       .clone()
+      .orderBy('nl.sent_at', 'desc')
       .select(
         'nl.id',
         'nl.notification_id',
@@ -69,7 +69,7 @@ const getByUser = async (userId: number, page: number, limit: number) => {
       )
       .limit(limit)
       .offset(offset),
-    query.clone().count<{ total: string }[]>('nl.id as total'),
+    baseQuery.clone().count<{ total: string }[]>('nl.id as total'),
   ]);
 
   return { data, total: Number(countRows[0]?.total ?? 0) };
