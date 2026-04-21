@@ -1,8 +1,8 @@
 import knex from '../config/db';
 import { FindUser, NewUser, NewUserProfile, PublicUser } from '../types/user';
 
-const createUser = async (user: NewUser): Promise<{ id: number; email: string }> => {
-  return (await knex.insert(user).into('users').returning(['id', 'email']))[0];
+const createUser = async (user: NewUser): Promise<{ id: number; username: string; email: string }> => {
+  return (await knex.insert(user).into('users').returning(['id', 'username', 'email']))[0];
 };
 
 const createProfile = async (profile: NewUserProfile): Promise<void> => {
@@ -13,7 +13,15 @@ const findUserByEmail = async (findUser: FindUser) => {
   return knex('users')
     .join('user_profiles', 'users.id', 'user_profiles.user_id')
     .where('users.email', findUser.email)
-    .select('users.id', 'users.email', 'users.passwordHash', 'user_profiles.name', 'user_profiles.timezone', 'user_profiles.push_token')
+    .select('users.id', 'users.username', 'users.email', 'users.passwordHash', 'user_profiles.name', 'user_profiles.timezone', 'user_profiles.push_token')
+    .first();
+};
+
+const findUserByUsername = async (username: string) => {
+  return knex('users')
+    .join('user_profiles', 'users.id', 'user_profiles.user_id')
+    .where('users.username', username)
+    .select('users.id', 'users.username', 'users.email', 'users.passwordHash', 'user_profiles.name', 'user_profiles.timezone', 'user_profiles.push_token')
     .first();
 };
 
@@ -21,7 +29,7 @@ const findUserById = async (id: number): Promise<PublicUser | undefined> => {
   return knex('users')
     .join('user_profiles', 'users.id', 'user_profiles.user_id')
     .where('users.id', id)
-    .select('users.id', 'users.email', 'user_profiles.name', 'user_profiles.timezone', 'user_profiles.push_token')
+    .select('users.id', 'users.username', 'users.email', 'user_profiles.name', 'user_profiles.timezone', 'user_profiles.push_token')
     .first();
 };
 
@@ -39,4 +47,4 @@ const updateProfile = async (
   return findUserById(id);
 };
 
-export { findUserById, findUserByEmail, createUser, createProfile, updateProfile };
+export { findUserById, findUserByEmail, findUserByUsername, createUser, createProfile, updateProfile };

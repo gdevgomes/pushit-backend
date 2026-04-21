@@ -1,5 +1,6 @@
 export interface User {
   id: number;
+  username: string;
   email: string;
   passwordHash: string;
 }
@@ -14,6 +15,7 @@ export interface UserProfile {
 
 export interface PublicUser {
   id: number;
+  username: string;
   name: string;
   email: string;
   timezone: string;
@@ -21,6 +23,7 @@ export interface PublicUser {
 }
 
 export type NewUser = {
+  username: string;
   email: string;
   passwordHash: string;
 };
@@ -35,6 +38,7 @@ export type FindUser = { email: string };
 
 export type RegisterInput = {
   name: string;
+  username: string;
   email: string;
   password: string;
   confirmPassword: string;

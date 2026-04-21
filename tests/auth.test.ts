@@ -4,24 +4,33 @@ import { app } from '../src/app';
 
 const baseUser = {
   name: 'Test User',
+  username: 'testuser',
   email: 'user@test.com',
   password: 'password123',
   confirmPassword: 'password123',
 };
 
 describe('POST /auth/register', () => {
-  it('cria usuário e retorna id, name, email sem passwordHash', async () => {
+  it('cria usuário e retorna id, username, name, email sem passwordHash', async () => {
     const res = await request(app).post('/auth/register').send(baseUser);
 
     expect(res.status).toBe(201);
-    expect(res.body).toMatchObject({ name: baseUser.name, email: baseUser.email });
+    expect(res.body).toMatchObject({ name: baseUser.name, username: baseUser.username, email: baseUser.email });
     expect(res.body).toHaveProperty('id');
     expect(res.body).not.toHaveProperty('passwordHash');
   });
 
   it('retorna 409 quando e-mail já cadastrado', async () => {
     await request(app).post('/auth/register').send(baseUser);
-    const res = await request(app).post('/auth/register').send(baseUser);
+    const res = await request(app).post('/auth/register').send({ ...baseUser, username: 'outro_user' });
+
+    expect(res.status).toBe(409);
+    expect(res.body.message).toBe('User already exists');
+  });
+
+  it('retorna 409 quando username já cadastrado', async () => {
+    await request(app).post('/auth/register').send(baseUser);
+    const res = await request(app).post('/auth/register').send({ ...baseUser, email: 'outro@test.com' });
 
     expect(res.status).toBe(409);
     expect(res.body.message).toBe('User already exists');
@@ -39,7 +48,17 @@ describe('POST /auth/register', () => {
   it('retorna 400 quando password está ausente', async () => {
     const res = await request(app).post('/auth/register').send({
       name: 'Test',
+      username: 'testuser2',
       email: 'test@example.com',
+    });
+
+    expect(res.status).toBe(400);
+  });
+
+  it('retorna 400 para username com caracteres inválidos', async () => {
+    const res = await request(app).post('/auth/register').send({
+      ...baseUser,
+      username: 'Test User!',
     });
 
     expect(res.status).toBe(400);
@@ -51,9 +70,9 @@ describe('POST /auth/login', () => {
     await request(app).post('/auth/register').send(baseUser);
   });
 
-  it('retorna token e perfil com credenciais corretas', async () => {
+  it('retorna token e perfil ao logar com username', async () => {
     const res = await request(app).post('/auth/login').send({
-      email: baseUser.email,
+      username: baseUser.username,
       password: baseUser.password,
     });
 
@@ -61,6 +80,7 @@ describe('POST /auth/login', () => {
     expect(res.body).toHaveProperty('token');
     expect(typeof res.body.token).toBe('string');
     expect(res.body.user).toMatchObject({
+      username: baseUser.username,
       email: baseUser.email,
       name: baseUser.name,
     });
@@ -69,9 +89,29 @@ describe('POST /auth/login', () => {
     expect(res.body.user).not.toHaveProperty('passwordHash');
   });
 
+  it('retorna token e perfil ao logar com email', async () => {
+    const res = await request(app).post('/auth/login').send({
+      username: baseUser.email,
+      password: baseUser.password,
+    });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty('token');
+    expect(res.body.user).toMatchObject({ email: baseUser.email });
+  });
+
+  it('retorna 404 para username não cadastrado', async () => {
+    const res = await request(app).post('/auth/login').send({
+      username: 'ninguem',
+      password: 'password123',
+    });
+
+    expect(res.status).toBe(404);
+  });
+
   it('retorna 404 para e-mail não cadastrado', async () => {
     const res = await request(app).post('/auth/login').send({
-      email: 'ninguem@test.com',
+      username: 'ninguem@test.com',
       password: 'password123',
     });
 
@@ -80,7 +120,7 @@ describe('POST /auth/login', () => {
 
   it('retorna 401 para senha incorreta', async () => {
     const res = await request(app).post('/auth/login').send({
-      email: baseUser.email,
+      username: baseUser.username,
       password: 'senha_errada',
     });
 
@@ -118,6 +158,7 @@ describe('POST /auth/google', () => {
   it('vincula provider a usuário já cadastrado com o mesmo e-mail', async () => {
     await request(app).post('/auth/register').send({
       ...baseUser,
+      username: 'googlelinked',
       email: googleUser.email,
       confirmPassword: baseUser.password,
     });
@@ -146,7 +187,7 @@ describe('PATCH /auth/profile', () => {
   beforeEach(async () => {
     await request(app).post('/auth/register').send(baseUser);
     const loginRes = await request(app).post('/auth/login').send({
-      email: baseUser.email,
+      username: baseUser.username,
       password: baseUser.password,
     });
     token = loginRes.body.token;

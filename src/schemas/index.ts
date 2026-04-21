@@ -15,6 +15,7 @@ const validIanaTimezone = z.string().refine(
 // Auth
 export const RegisterSchema = z.object({
   name: z.string().min(2).max(100),
+  username: z.string().min(3).max(50).regex(/^[a-z0-9_]+$/, 'Only lowercase letters, numbers and underscores'),
   email: z.email(),
   password: z.string().min(6),
   confirmPassword: z.string().min(1),
@@ -22,7 +23,7 @@ export const RegisterSchema = z.object({
 });
 
 export const LoginSchema = z.object({
-  email: z.string().email(),
+  username: z.string().min(1),
   password: z.string().min(1),
 });
 

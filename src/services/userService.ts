@@ -1,6 +1,7 @@
 import { AppError, Errors } from '../errors';
 import {
   findUserByEmail,
+  findUserByUsername,
   findUserById,
   createUser,
   createProfile,
@@ -19,8 +20,11 @@ async function hashPassword(password: string) {
 }
 
 const createNewUser = async (userData: RegisterInput) => {
-  const existing = await findUserByEmail({ email: userData.email });
-  if (existing) throw new AppError(Errors.USER_EXISTS);
+  const [existingEmail, existingUsername] = await Promise.all([
+    findUserByEmail({ email: userData.email }),
+    findUserByUsername(userData.username),
+  ]);
+  if (existingEmail || existingUsername) throw new AppError(Errors.USER_EXISTS);
 
   if (!userData.password || !userData.confirmPassword)
     throw new AppError(Errors.PASSWORD_REQUIRED);
@@ -28,6 +32,7 @@ const createNewUser = async (userData: RegisterInput) => {
     throw new AppError(Errors.PASSWORD_MISMATCH);
 
   const user = await createUser({
+    username: userData.username,
     email: userData.email,
     passwordHash: await hashPassword(userData.password),
   });
@@ -38,11 +43,13 @@ const createNewUser = async (userData: RegisterInput) => {
     timezone: userData.timezone ?? 'UTC',
   });
 
-  return { id: user.id, name: userData.name, email: user.email, timezone: userData.timezone ?? 'UTC' };
+  return { id: user.id, username: user.username, name: userData.name, email: user.email, timezone: userData.timezone ?? 'UTC' };
 };
 
-const loginUser = async (email: string, password: string) => {
-  const user = await findUserByEmail({ email });
+const loginUser = async (username: string, password: string) => {
+  const user = username.includes('@')
+    ? await findUserByEmail({ email: username })
+    : await findUserByUsername(username);
   if (!user) throw new AppError(Errors.USER_NOT_FOUND);
   const valid = await bcrypt.compare(password, user.passwordHash);
   if (!valid) throw new AppError(Errors.INVALID_PASSWORD);
@@ -57,6 +64,7 @@ const loginUser = async (email: string, password: string) => {
     token,
     user: {
       id: user.id,
+      username: user.username,
       email: user.email,
       name: user.name,
       timezone: user.timezone,
@@ -133,7 +141,10 @@ const loginWithProvider = async (data: ProviderLoginData) => {
       userTimezone = byEmail.timezone;
     } else {
       const unusableHash = await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 10);
-      const user = await createUser({ email: data.email, passwordHash: unusableHash });
+      const baseUsername = data.email.split('@')[0]!.toLowerCase().replace(/[^a-z0-9_]/g, '_');
+      const existingUn = await findUserByUsername(baseUsername);
+      const username = existingUn ? `${baseUsername}_${Date.now()}` : baseUsername;
+      const user = await createUser({ username, email: data.email, passwordHash: unusableHash });
       await createProfile({ user_id: user.id, name: data.name, timezone: data.timezone ?? 'UTC' });
       userId = user.id;
       userEmail = user.email;

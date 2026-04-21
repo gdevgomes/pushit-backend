@@ -201,6 +201,36 @@ describe('PUT /group/:id/notifications/:notificationId', () => {
 
     expect(res.status).toBe(404);
   });
+
+  it('recalcula scheduled_at ao atualizar month e day', async () => {
+    const { owner, group } = await setupGroupWithMember();
+    const { body: notification } = await postNotification(owner.token, group.id, { month: 3, day: 15 });
+
+    const res = await request(app)
+      .put(`/group/${group.id}/notifications/${notification.id}`)
+      .set('Authorization', `Bearer ${owner.token}`)
+      .send({ month: 6, day: 20 });
+
+    expect(res.status).toBe(200);
+    expect(res.body.month).toBe(6);
+    expect(res.body.day).toBe(20);
+    expect(new Date(res.body.scheduled_at).toISOString()).toBe(res.body.scheduled_at);
+  });
+
+  it('recalcula scheduled_at ao atualizar apenas hour (mantém month/day da notificação)', async () => {
+    const { owner, group } = await setupGroupWithMember();
+    const { body: notification } = await postNotification(owner.token, group.id, { month: 8, day: 20 });
+
+    const res = await request(app)
+      .put(`/group/${group.id}/notifications/${notification.id}`)
+      .set('Authorization', `Bearer ${owner.token}`)
+      .send({ hour: 10 });
+
+    expect(res.status).toBe(200);
+    expect(res.body.month).toBe(8);
+    expect(res.body.day).toBe(20);
+    expect(new Date(res.body.scheduled_at).toISOString()).toBe(res.body.scheduled_at);
+  });
 });
 
 describe('GET /notifications', () => {

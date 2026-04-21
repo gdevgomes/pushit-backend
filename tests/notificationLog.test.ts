@@ -40,6 +40,53 @@ async function insertLog(notificationId: number, groupId: number, status = 'sent
   return log;
 }
 
+describe('GET /group/:id/notifications/:notificationId/logs', () => {
+  it('dono acessa logs de uma notificação → 200', async () => {
+    const { owner, group, notification } = await setupGroupWithNotification();
+    await insertLog(notification.id, group.id);
+
+    const res = await request(app)
+      .get(`/group/${group.id}/notifications/${notification.id}/logs`)
+      .set('Authorization', `Bearer ${owner.token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty('logs');
+    expect(res.body.logs.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('não-membro recebe 403', async () => {
+    const { group, notification } = await setupGroupWithNotification();
+    const stranger = await registerAndLogin();
+
+    const res = await request(app)
+      .get(`/group/${group.id}/notifications/${notification.id}/logs`)
+      .set('Authorization', `Bearer ${stranger.token}`);
+
+    expect(res.status).toBe(403);
+  });
+
+  it('notificationId inexistente retorna 404', async () => {
+    const { owner, group } = await setupGroupWithNotification();
+
+    const res = await request(app)
+      .get(`/group/${group.id}/notifications/9999/logs`)
+      .set('Authorization', `Bearer ${owner.token}`);
+
+    expect(res.status).toBe(404);
+  });
+
+  it('notificação de outro grupo retorna 404', async () => {
+    const { owner, group } = await setupGroupWithNotification();
+    const { notification: otherNotif } = await setupGroupWithNotification();
+
+    const res = await request(app)
+      .get(`/group/${group.id}/notifications/${otherNotif.id}/logs`)
+      .set('Authorization', `Bearer ${owner.token}`);
+
+    expect(res.status).toBe(404);
+  });
+});
+
 describe('GET /notification-logs', () => {
   it('retorna logs do usuário que é membro do grupo', async () => {
     const { owner, group, notification } = await setupGroupWithNotification();

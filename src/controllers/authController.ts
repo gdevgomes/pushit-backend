@@ -18,8 +18,8 @@ const createAuth = async (req: Request, res: Response, next: NextFunction) => {
 
 const login = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { email, password } = req.body;
-    const user = await loginUser(email, password);
+    const { username, password } = req.body;
+    const user = await loginUser(username, password);
     return res.status(200).json(user);
   } catch (error) {
     next(error);

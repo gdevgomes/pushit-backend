@@ -3,6 +3,7 @@ import request from 'supertest';
 import { app } from '../src/app';
 import { registerAndLogin } from './helpers/auth';
 import { vi, describe, it, expect } from 'vitest';
+import db from '../src/config/db';
 
 vi.mock('../src/utils/abacatePayClient', () => ({
   createPixQrCode: vi.fn().mockResolvedValue({
@@ -105,6 +106,18 @@ describe('POST /payment/group/:groupId/pix', () => {
     const res = await request(app).post('/payment/group/1/pix');
     expect(res.status).toBe(401);
   });
+
+  it('retorna 400 quando subscription está cancelada', async () => {
+    const { owner, group } = await setupOwnerAndGroup();
+    await db('group_subscriptions').where({ group_id: group.id }).update({ status: 'cancelled' });
+
+    const res = await request(app)
+      .post(`/payment/group/${group.id}/pix`)
+      .set('Authorization', `Bearer ${owner.token}`);
+
+    expect(res.status).toBe(400);
+    expect(res.body.key).toBe('SUBSCRIPTION_CANCELLED');
+  });
 });
 
 describe('GET /payment/group/:groupId', () => {
@@ -189,6 +202,135 @@ describe('POST /payment/webhook', () => {
       .send(payload);
 
     expect(res.status).toBe(401);
+  });
+
+  it('webhook com evento diferente de transparent.completed não faz nada', async () => {
+    const payload = JSON.stringify({ event: 'transparent.created', data: { id: 'pix_test_123' } });
+    const signature = makeSignature(payload);
+
+    const res = await request(app)
+      .post('/payment/webhook')
+      .set('x-webhook-signature', signature)
+      .set('Content-Type', 'application/json')
+      .send(payload);
+
+    expect(res.status).toBe(200);
+  });
+
+  it('webhook sem externalId não faz nada', async () => {
+    const payload = JSON.stringify({ event: 'transparent.completed', data: {} });
+    const signature = makeSignature(payload);
+
+    const res = await request(app)
+      .post('/payment/webhook')
+      .set('x-webhook-signature', signature)
+      .set('Content-Type', 'application/json')
+      .send(payload);
+
+    expect(res.status).toBe(200);
+  });
+
+  it('webhook com externalId desconhecido não faz nada', async () => {
+    const payload = JSON.stringify({ event: 'transparent.completed', data: { id: 'unknown_id' } });
+    const signature = makeSignature(payload);
+
+    const res = await request(app)
+      .post('/payment/webhook')
+      .set('x-webhook-signature', signature)
+      .set('Content-Type', 'application/json')
+      .send(payload);
+
+    expect(res.status).toBe(200);
+  });
+
+  it('webhook usando data.externalId em vez de data.id', async () => {
+    const { owner, group } = await setupOwnerAndGroup();
+    await request(app).post(`/payment/group/${group.id}/pix`).set('Authorization', `Bearer ${owner.token}`);
+
+    const payload = JSON.stringify({ event: 'transparent.completed', data: { externalId: 'pix_test_123' } });
+    const signature = makeSignature(payload);
+
+    const res = await request(app)
+      .post('/payment/webhook')
+      .set('x-webhook-signature', signature)
+      .set('Content-Type', 'application/json')
+      .send(payload);
+
+    expect(res.status).toBe(200);
+  });
+
+  it('webhook para pagamento já pago não processa novamente', async () => {
+    const { owner, group } = await setupOwnerAndGroup();
+    await request(app).post(`/payment/group/${group.id}/pix`).set('Authorization', `Bearer ${owner.token}`);
+
+    const payload = JSON.stringify({ event: 'transparent.completed', data: { id: 'pix_test_123' } });
+    const signature = makeSignature(payload);
+
+    // Primeiro webhook — processa
+    await request(app)
+      .post('/payment/webhook')
+      .set('x-webhook-signature', signature)
+      .set('Content-Type', 'application/json')
+      .send(payload);
+
+    // Segundo webhook com mesmo id — payment.status === 'paid', deve ignorar
+    const res = await request(app)
+      .post('/payment/webhook')
+      .set('x-webhook-signature', signature)
+      .set('Content-Type', 'application/json')
+      .send(payload);
+
+    expect(res.status).toBe(200);
+  });
+
+  it('quando paid_until já está no futuro, estende a partir dele (não de now)', async () => {
+    const { owner, group } = await setupOwnerAndGroup();
+
+    // Primeiro pagamento
+    await request(app)
+      .post(`/payment/group/${group.id}/pix`)
+      .set('Authorization', `Bearer ${owner.token}`);
+
+    const payload1 = JSON.stringify({ event: 'transparent.completed', data: { id: 'pix_test_123' } });
+    const sig1 = makeSignature(payload1);
+    await request(app)
+      .post('/payment/webhook')
+      .set('x-webhook-signature', sig1)
+      .set('Content-Type', 'application/json')
+      .send(payload1);
+
+    // Subscription agora tem paid_until = now + 30 dias
+    const sub1 = await db('group_subscriptions').where({ group_id: group.id }).first();
+    const paidUntil1 = new Date(sub1.paid_until);
+
+    // Segundo pagamento (precisa limpar o pending e criar um novo external_id)
+    await db('payments').where({ group_id: group.id }).update({ status: 'paid' });
+    await db('payments').insert({
+      group_id: group.id,
+      subscription_id: sub1.id,
+      external_id: 'pix_test_second',
+      amount: sub1.monthly_amount,
+      status: 'pending',
+      pix_br_code: 'code2',
+      pix_br_code_base64: 'base64_2',
+      expires_at: new Date(Date.now() + 86400000).toISOString(),
+    });
+
+    const payload2 = JSON.stringify({ event: 'transparent.completed', data: { id: 'pix_test_second' } });
+    const sig2 = makeSignature(payload2);
+    await request(app)
+      .post('/payment/webhook')
+      .set('x-webhook-signature', sig2)
+      .set('Content-Type', 'application/json')
+      .send(payload2);
+
+    const sub2 = await db('group_subscriptions').where({ group_id: group.id }).first();
+    const paidUntil2 = new Date(sub2.paid_until);
+
+    // paid_until2 deve ser ~30 dias após paid_until1 (não após now)
+    const diffDays = (paidUntil2.getTime() - paidUntil1.getTime()) / (1000 * 60 * 60 * 24);
+    expect(diffDays).toBeGreaterThan(25);
+    expect(diffDays).toBeLessThan(35);
   });
 
   it('marca pagamento como pago ao receber transparent.completed', async () => {

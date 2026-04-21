@@ -12,7 +12,8 @@
     "migrate:rollback": "npm run knex -- migrate:rollback",
     "seed": "npm run knex -- seed:run",
     "seed-notifications": "npx knex seed:run --specific=03_notifications.ts",
-    "test": "vitest run",
+    "test": "vitest run 2>&1 | tee /tmp/pushit-test.log",
+    "test:branches": "vitest run --coverage 2>&1 | tee /tmp/pushit-coverage.log",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"
   },
