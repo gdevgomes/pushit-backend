@@ -30,6 +30,10 @@ There is no build step for production — the project currently runs via ts-node
 - **Postman collection:** keep `postman-group-collection.json` up to date whenever routes are added, removed, or their request/response shape changes.
 - **Tests:** keep the test files in `tests/` up to date whenever business logic, services, or repositories change.
 
+## Always do on every commit
+
+- **Bump the version** in `package.json` following semver (`patch` for fixes, `minor` for new features). The `GET /status` route exposes this version publicly — it's how we verify which version is running in production after a deploy.
+
 ## Architecture
 
 Layered architecture with strict separation:
