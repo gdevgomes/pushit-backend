@@ -1,5 +1,7 @@
-import { beforeAll, afterEach } from 'vitest';
+import { beforeAll, afterEach, vi } from 'vitest';
 import db from '../src/config/db';
+
+vi.mock('bcrypt');
 
 beforeAll(async () => {
   await db.migrate.rollback({ all: true } as Record<string, unknown>);

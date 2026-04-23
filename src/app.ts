@@ -26,7 +26,9 @@ app.use(
 );
 
 app.use(express.urlencoded({ extended: true }));
-app.use(morgan(isProd ? 'combined' : 'dev'));
+if (env.nodeEnv !== 'test') {
+  app.use(morgan(isProd ? 'combined' : 'dev'));
+}
 app.use(cors({
   origin: isProd ? (process.env['ALLOWED_ORIGINS'] ?? '').split(',').filter(Boolean) : '*',
   credentials: true,

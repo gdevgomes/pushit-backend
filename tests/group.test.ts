@@ -2,6 +2,25 @@ import { vi, describe, it, expect } from 'vitest';
 import request from 'supertest';
 import { app } from '../src/app';
 import { registerAndLogin } from './helpers/auth';
+import db from '../src/config/db';
+
+async function bulkAddMembersToGroup(groupId: number, count: number): Promise<void> {
+  const users = Array.from({ length: count }, (_, i) => ({
+    email: `bulk_member_${i}_${Date.now()}@test.com`,
+    passwordHash: 'fakehash',
+    username: `bulk_member_${i}_${Date.now()}`,
+  }));
+  const inserted = await db('users').insert(users).returning('id');
+  const userIds = inserted.map((r: { id: number } | number) =>
+    typeof r === 'object' ? r.id : r,
+  );
+  await db('user_profiles').insert(
+    userIds.map((user_id: number) => ({ user_id, name: 'Bulk Member', timezone: 'UTC' })),
+  );
+  await db('users_groups').insert(
+    userIds.map((user_id: number) => ({ user_id, group_id: groupId })),
+  );
+}
 
 async function createGroup(token: string, data = {}) {
   const res = await request(app)
@@ -115,14 +134,8 @@ describe('POST /group/join', () => {
       .set('Authorization', `Bearer ${owner.token}`)
       .send({ plan_slug: 'starter' });
 
-    // enche o grupo até o limite do Starter (owner já é membro = 1, adiciona mais 24)
-    for (let i = 2; i <= 25; i++) {
-      const { token } = await registerAndLogin({ email: `member${i}@test.com` });
-      await request(app)
-        .post('/group/join')
-        .set('Authorization', `Bearer ${token}`)
-        .send({ groupId: group.id });
-    }
+    // enche o grupo até o limite do Starter (owner já é membro = 1, adiciona mais 24 via bulk)
+    await bulkAddMembersToGroup(group.id, 24);
 
     const { token: extraToken } = await registerAndLogin({ email: 'extra@test.com' });
     const res = await request(app)

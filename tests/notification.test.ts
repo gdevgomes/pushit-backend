@@ -2,6 +2,20 @@ import { vi, describe, it, expect } from 'vitest';
 import request from 'supertest';
 import { app } from '../src/app';
 import { registerAndLogin } from './helpers/auth';
+import db from '../src/config/db';
+
+async function bulkInsertNotifications(groupId: number, createdBy: number, count: number): Promise<void> {
+  const notifications = Array.from({ length: count }, (_, i) => ({
+    name: `Notif bulk ${i + 1}`,
+    month: 8,
+    day: 15,
+    timezone: 'UTC',
+    scheduled_at: new Date().toISOString(),
+    group_id: groupId,
+    created_by: createdBy,
+  }));
+  await db('notifications').insert(notifications);
+}
 
 const baseNotification = {
   name: 'Aniversário da empresa',
@@ -72,19 +86,15 @@ describe('POST /group/:id/notifications', () => {
   it('dono pode criar até 5 notificações (limite Starter)', async () => {
     const { owner, group } = await setupGroupWithMember('starter');
 
-    for (let i = 1; i <= 5; i++) {
-      const res = await postNotification(owner.token, group.id, { name: `Notif ${i}` });
-      expect(res.status).toBe(201);
-    }
+    await bulkInsertNotifications(group.id, owner.id, 4);
+    const res = await postNotification(owner.token, group.id, { name: 'Notif 5' });
+    expect(res.status).toBe(201);
   });
 
   it('dono não pode criar mais de 5 notificações (limite Starter)', async () => {
     const { owner, group } = await setupGroupWithMember('starter');
 
-    for (let i = 1; i <= 5; i++) {
-      await postNotification(owner.token, group.id, { name: `Notif ${i}` });
-    }
-
+    await bulkInsertNotifications(group.id, owner.id, 5);
     const res = await postNotification(owner.token, group.id, { name: 'Notif 6' });
     expect(res.status).toBe(400);
     expect(res.body.message).toMatch(/limit/i);
