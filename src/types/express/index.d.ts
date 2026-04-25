@@ -3,7 +3,8 @@ import 'http';
 
 export interface AuthUser {
   id: number;
-  email: string;
+  email: string | null;
+  accountType: 'device' | 'local' | 'provider';
   iat: number;
   exp: number;
 }

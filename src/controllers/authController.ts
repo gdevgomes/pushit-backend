@@ -2,6 +2,10 @@ import { Request, Response, NextFunction } from 'express';
 import {
   createNewUser,
   loginUser,
+  loginOrCreateDevice,
+  elevateAccountToLocal,
+  elevateAccountToProvider,
+  addProviderToAccount,
   editProfile as editProfileService,
   loginWithProvider,
 } from '../services/userService';
@@ -21,6 +25,52 @@ const login = async (req: Request, res: Response, next: NextFunction) => {
     const { username, password } = req.body;
     const user = await loginUser(username, password);
     return res.status(200).json(user);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const deviceLogin = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { device_id } = req.body;
+    const result = await loginOrCreateDevice(device_id);
+    return res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const elevateLocal = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) throw new AppError(Errors.UNAUTHORIZED);
+    const { name, username, email, password, timezone } = req.body;
+    const result = await elevateAccountToLocal(userId, { name, username, email, password, timezone });
+    return res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const elevateProvider = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) throw new AppError(Errors.UNAUTHORIZED);
+    const { provider_id, provider, email, name, timezone } = req.body;
+    const result = await elevateAccountToProvider(userId, { provider_id, provider, email, name, timezone });
+    return res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const addProvider = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) throw new AppError(Errors.UNAUTHORIZED);
+    const { provider_id, provider, email, name } = req.body;
+    await addProviderToAccount(userId, { provider_id, provider, email, name });
+    return res.status(200).json({ message: 'Provider added successfully' });
   } catch (error) {
     next(error);
   }
@@ -48,4 +98,4 @@ const loginWithGoogle = async (req: Request, res: Response, next: NextFunction) 
   }
 };
 
-export { createAuth, login, editProfile, loginWithGoogle };
+export { createAuth, login, deviceLogin, elevateLocal, elevateProvider, addProvider, editProfile, loginWithGoogle };

@@ -107,6 +107,39 @@ export const OwnerLeaveSchema = z.object({
   nextOwnerId: z.coerce.number().int().positive().optional(),
 });
 
+export const DeviceLoginSchema = z.object({
+  device_id: z.string().uuid(),
+});
+
+export const ElevateLocalSchema = z
+  .object({
+    name: z.string().min(2).max(100),
+    username: z.string().min(3).max(50).regex(/^[a-z0-9_]+$/, 'Only lowercase letters, numbers and underscores'),
+    email: z.email(),
+    password: z.string().min(6),
+    confirmPassword: z.string().min(1),
+    timezone: validIanaTimezone.optional().default('UTC'),
+  })
+  .refine((d) => d.password === d.confirmPassword, {
+    message: 'Passwords do not match',
+    path: ['confirmPassword'],
+  });
+
+export const ElevateProviderSchema = z.object({
+  provider_id: z.string().min(1),
+  provider: z.string().min(1),
+  email: z.email(),
+  name: z.string().min(1),
+  timezone: validIanaTimezone.optional().default('UTC'),
+});
+
+export const AddProviderSchema = z.object({
+  provider_id: z.string().min(1),
+  provider: z.string().min(1),
+  email: z.email(),
+  name: z.string().min(1),
+});
+
 export const MonthParamSchema = z.object({
   month: z.coerce.number().int().min(1).max(12),
 });

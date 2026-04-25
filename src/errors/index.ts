@@ -14,6 +14,8 @@ export const Errors = {
   INVALID_PASSWORD:         { code: 1005, key: 'INVALID_PASSWORD',         status: 401, message: 'Invalid password' },
   NAME_REQUIRED:            { code: 1006, key: 'NAME_REQUIRED',            status: 400, message: 'Name is required' },
   UNAUTHORIZED:             { code: 1007, key: 'UNAUTHORIZED',             status: 401, message: 'Unauthorized' },
+  ACCOUNT_ALREADY_ELEVATED: { code: 1009, key: 'ACCOUNT_ALREADY_ELEVATED', status: 409, message: 'Account is already elevated' },
+  ELEVATED_ACCOUNT_REQUIRED:{ code: 1010, key: 'ELEVATED_ACCOUNT_REQUIRED',status: 403, message: 'This action requires a verified account' },
 
   // Group (2xxx)
   GROUP_NOT_FOUND:          { code: 2001, key: 'GROUP_NOT_FOUND',          status: 404, message: 'Group not found' },

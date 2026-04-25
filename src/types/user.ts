@@ -1,8 +1,12 @@
+export type AccountType = 'device' | 'local' | 'provider';
+
 export interface User {
   id: number;
-  username: string;
-  email: string;
-  passwordHash: string;
+  account_type: AccountType;
+  device_id: string | null;
+  username: string | null;
+  email: string | null;
+  passwordHash: string | null;
 }
 
 export interface UserProfile {
@@ -15,17 +19,20 @@ export interface UserProfile {
 
 export interface PublicUser {
   id: number;
-  username: string;
+  account_type: AccountType;
+  username: string | null;
   name: string;
-  email: string;
+  email: string | null;
   timezone: string;
   push_token?: string;
 }
 
 export type NewUser = {
-  username: string;
-  email: string;
-  passwordHash: string;
+  username?: string | null;
+  email?: string | null;
+  passwordHash?: string | null;
+  account_type?: AccountType;
+  device_id?: string | null;
 };
 
 export type NewUserProfile = {
