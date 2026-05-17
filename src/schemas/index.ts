@@ -81,6 +81,14 @@ export const JoinLeaveGroupSchema = z.object({
   groupId: z.coerce.number().int().positive(),
 });
 
+export const JoinWithBirthdaySchema = z.object({
+  groupId: z.coerce.number().int().positive(),
+  name: z.string().min(1).max(255),
+  month: z.coerce.number().int().min(1).max(12),
+  day: z.coerce.number().int().min(1).max(31),
+  hour: z.coerce.number().int().min(0).max(23).optional(),
+});
+
 // Notification
 export const CreateNotificationSchema = z.object({
   name: z.string().min(1).max(255),
@@ -145,6 +153,10 @@ export const MonthParamSchema = z.object({
 });
 
 // Pagination
+export const ValidateGroupSchema = z.object({
+  groupId: z.coerce.number().int().positive(),
+});
+
 export const PaginationSchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(20),

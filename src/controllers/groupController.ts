@@ -102,3 +102,22 @@ export const upgradeGroup = async (req: Request, res: Response, next: NextFuncti
     next(error);
   }
 };
+
+export const joinWithBirthday = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { groupId, name, month, day, hour } = req.body;
+    const result = await groupService.joinWithBirthday(groupId, { name, month, day, hour }, req.user!);
+    res.status(201).json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const validateGroup = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const result = await groupService.validateGroup(req.body.groupId);
+    res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+};

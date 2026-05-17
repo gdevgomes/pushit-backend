@@ -1,6 +1,7 @@
 import groupRepository from '../repositories/groupRepository';
 import subscriptionRepository from '../repositories/subscriptionRepository';
 import planRepository from '../repositories/planRepository';
+import notificationService from './notificationService';
 import { Group, NewGroup } from '../types/group';
 import { AppError, Errors } from '../errors';
 import { AuthUser } from '../types/express';
@@ -150,6 +151,44 @@ const getGroupByCode = async (code: string) => {
   return group;
 };
 
+const validateGroup = async (groupId: number) => {
+  const group = await groupRepository.getGroupById(groupId);
+  if (!group) throw new AppError(Errors.GROUP_NOT_FOUND);
+
+  const memberCount = await groupRepository.countUsersByGroup(groupId);
+  const subscription = await subscriptionRepository.getByGroupId(groupId);
+  const plan = subscription ? await planRepository.getById(subscription.plan_id) : null;
+  const maxMembers = plan?.max_members ?? null;
+
+  if (maxMembers !== null && memberCount >= maxMembers) {
+    throw new AppError(Errors.MEMBER_LIMIT_REACHED);
+  }
+
+  return {
+    available: true,
+    group: {
+      id: group.id,
+      name: group.name,
+      description: group.description ?? null,
+      member_count: memberCount,
+      max_members: maxMembers,
+    },
+  };
+};
+
+const joinWithBirthday = async (
+  groupId: number,
+  birthday: { name: string; month: number; day: number; hour?: number },
+  user: AuthUser
+) => {
+  const group = await groupRepository.getGroupById(groupId);
+  if (!group) throw new AppError(Errors.GROUP_NOT_FOUND);
+
+  await addUserToGroup(groupId, user);
+  const notification = await notificationService.createNotification(groupId, birthday, user);
+  return { notification };
+};
+
 const getSubscription = async (groupId: number, user: AuthUser) => {
   const groups = await groupRepository.getGroupsByUser(user.id);
   const group = groups.find((g: Group) => g.id === groupId);
@@ -166,6 +205,7 @@ export default {
   createGroup,
   upgradeGroup,
   addUserToGroup,
+  joinWithBirthday,
   removeUserFromGroup,
   ownerLeaveGroup,
   kickUser,
@@ -175,4 +215,5 @@ export default {
   updateGroup,
   getGroupByCode,
   getSubscription,
+  validateGroup,
 };
