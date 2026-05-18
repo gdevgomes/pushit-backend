@@ -24,6 +24,7 @@ npm-debug.log*
 # claude
 .claude/*
 !.claude/settings.json
+!.claude/CLAUDE.md
 claude.js
 script.sh
 showQRcode.html
