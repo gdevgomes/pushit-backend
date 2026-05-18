@@ -124,7 +124,7 @@ const getGroupByCode = async (code: string) => {
     .join('users as owner', 'groups.owner_id', 'owner.id')
     .join('user_profiles as owner_profile', 'owner.id', 'owner_profile.user_id')
     .whereRaw('UPPER(groups.code) = UPPER(?)', [code])
-    .select('groups.id', 'groups.name', 'groups.description', 'groups.code', 'groups.owner_id', 'owner_profile.name as owner_name')
+    .select('groups.id', 'groups.name', 'groups.description', 'groups.code', 'groups.owner_id', 'groups.created_at', 'owner_profile.name as owner_name')
     .first();
 };
 

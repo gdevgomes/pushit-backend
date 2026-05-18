@@ -148,7 +148,18 @@ const updateGroup = async (
 const getGroupByCode = async (code: string) => {
   const group = await groupRepository.getGroupByCode(code);
   if (!group) throw new AppError(Errors.GROUP_NOT_FOUND);
-  return group;
+
+  const memberCount = await groupRepository.countUsersByGroup(group.id);
+  const subscription = await subscriptionRepository.getByGroupId(group.id);
+  const plan = subscription ? await planRepository.getById(subscription.plan_id) : null;
+
+  return {
+    ...group,
+    member_count: memberCount,
+    max_members: plan?.max_members ?? null,
+    plan_name: plan?.name ?? null,
+    subscription_status: subscription?.status ?? null,
+  };
 };
 
 const validateGroup = async (groupId: number) => {
@@ -185,6 +196,7 @@ const joinWithBirthday = async (
   if (!group) throw new AppError(Errors.GROUP_NOT_FOUND);
 
   await addUserToGroup(groupId, user);
+
   const notification = await notificationService.createNotification(groupId, birthday, user);
   return { notification };
 };
