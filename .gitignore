@@ -22,7 +22,8 @@ npm-debug.log*
 *.swp
 
 # claude
-.claude/
+.claude/*
+!.claude/settings.json
 claude.js
 script.sh
 showQRcode.html
