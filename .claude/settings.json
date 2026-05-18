@@ -6,12 +6,12 @@
         "hooks": [
           {
             "type": "command",
-            "if": "Bash(git push*)",
+            "if": "Bash(git*)",
             "asyncRewake": true,
             "rewakeMessage": "Resultado do polling de deploy:",
             "rewakeSummary": "Deploy monitorado",
             "statusMessage": "Monitorando deploy...",
-            "command": "API_URL=$(grep EXPO_PUBLIC_API_URL /home/gabriel/pro/push-it-app/.env 2>/dev/null | cut -d'\"' -f2); LOCAL=$(git -C /home/gabriel/pro/pushit-backend rev-parse HEAD 2>/dev/null); REMOTE=$(git -C /home/gabriel/pro/pushit-backend ls-remote origin HEAD 2>/dev/null | cut -f1); if [ \"$LOCAL\" != \"$REMOTE\" ]; then echo \"Aviso: push pode nao ter chegado ao remote (local=$LOCAL remote=$REMOTE)\"; fi; CURRENT=$(curl -s \"$API_URL/status\" | jq -r '.version'); echo \"Monitorando deploy — versao atual em prod: $CURRENT\"; COUNT=0; while [ $COUNT -lt 30 ]; do sleep 20; NEW=$(curl -s \"$API_URL/status\" | jq -r '.version'); if [ \"$NEW\" != \"$CURRENT\" ]; then echo \"Deploy concluido: $CURRENT -> $NEW\"; exit 2; fi; COUNT=$((COUNT+1)); echo \"$(date '+%H:%M:%S') — ainda $CURRENT... ($COUNT/30)\"; done; echo \"Timeout apos 10min — versao ainda $CURRENT\"; exit 2"
+            "command": "INPUT=$(cat); echo \"$INPUT\" | jq -r '.tool_input.command' | grep -q 'push' || exit 0; API_URL=$(grep EXPO_PUBLIC_API_URL /home/gabriel/pro/push-it-app/.env 2>/dev/null | cut -d'\"' -f2); LOCAL=$(git -C /home/gabriel/pro/pushit-backend rev-parse HEAD 2>/dev/null); REMOTE=$(git -C /home/gabriel/pro/pushit-backend ls-remote origin HEAD 2>/dev/null | cut -f1); if [ \"$LOCAL\" != \"$REMOTE\" ]; then echo \"Aviso: push pode nao ter chegado ao remote (local=$LOCAL remote=$REMOTE)\"; fi; CURRENT=$(curl -s \"$API_URL/status\" | jq -r '.version'); echo \"Monitorando deploy — versao atual em prod: $CURRENT\"; COUNT=0; while [ $COUNT -lt 30 ]; do sleep 20; NEW=$(curl -s \"$API_URL/status\" | jq -r '.version'); if [ \"$NEW\" != \"$CURRENT\" ]; then echo \"Deploy concluido: $CURRENT -> $NEW\"; exit 2; fi; COUNT=$((COUNT+1)); echo \"$(date '+%H:%M:%S') — ainda $CURRENT... ($COUNT/30)\"; done; echo \"Timeout apos 10min — versao ainda $CURRENT\"; exit 2"
           }
         ]
       }
