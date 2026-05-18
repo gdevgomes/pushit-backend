@@ -189,7 +189,7 @@ const validateGroup = async (groupId: number) => {
 
 const joinWithBirthday = async (
   groupId: number,
-  birthday: { name: string; month: number; day: number; hour?: number },
+  birthday: { name: string; description?: string; month: number; day: number; hour?: number },
   user: AuthUser
 ) => {
   const group = await groupRepository.getGroupById(groupId);

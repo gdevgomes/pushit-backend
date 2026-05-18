@@ -105,8 +105,8 @@ export const upgradeGroup = async (req: Request, res: Response, next: NextFuncti
 
 export const joinWithBirthday = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { groupId, name, month, day, hour } = req.body;
-    const result = await groupService.joinWithBirthday(groupId, { name, month, day, hour }, req.user!);
+    const { groupId, name, description, month, day, hour } = req.body;
+    const result = await groupService.joinWithBirthday(groupId, { name, description, month, day, hour }, req.user!);
     res.status(201).json(result);
   } catch (error) {
     next(error);
