@@ -144,7 +144,7 @@ describe('POST /group/join', () => {
       .send({ groupId: group.id });
 
     expect(res.status).toBe(400);
-    expect(res.body.message).toMatch(/limit/i);
+    expect(res.body.key).toBe('MEMBER_LIMIT_REACHED');
   });
 
   it('retorna 400 ao entrar em um grupo que já é membro', async () => {

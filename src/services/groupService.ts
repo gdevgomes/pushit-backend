@@ -95,7 +95,7 @@ const ownerLeaveGroup = async (groupId: number, nextOwnerId: number | undefined,
   } else {
     const oldest = await groupRepository.getOldestMember(groupId, user.id);
     if (!oldest) {
-      await groupRepository.deleteGroup(groupId);
+      await groupRepository.softDeleteGroup(groupId);
       return;
     }
     nextOwnerId = oldest.user_id;
@@ -201,6 +201,13 @@ const joinWithBirthday = async (
   return { notification };
 };
 
+const deleteGroup = async (groupId: number, user: AuthUser): Promise<void> => {
+  const group = await groupRepository.getGroupById(groupId);
+  if (!group) throw new AppError(Errors.GROUP_NOT_FOUND);
+  if (group.owner_id !== user.id) throw new AppError(Errors.ONLY_OWNER_CAN_DELETE);
+  await groupRepository.softDeleteGroup(groupId);
+};
+
 const getSubscription = async (groupId: number, user: AuthUser) => {
   const groups = await groupRepository.getGroupsByUser(user.id);
   const group = groups.find((g: Group) => g.id === groupId);
@@ -225,6 +232,7 @@ export default {
   getUsersByGroup,
   isUserInGroup,
   updateGroup,
+  deleteGroup,
   getGroupByCode,
   getSubscription,
   validateGroup,

@@ -32,6 +32,7 @@ const getGroupsByUser = async (user_id: number) => {
     .join('user_profiles as owner_profile', 'owner.id', 'owner_profile.user_id')
     .leftJoin('group_subscriptions as sub', 'groups.id', 'sub.group_id')
     .where('users_groups.user_id', user_id)
+    .whereNull('groups.deleted_at')
     .select(
       'groups.id',
       'groups.name',
@@ -53,7 +54,8 @@ const getPaginatedGroupsByUser = async (user_id: number, page: number, limit: nu
   const baseQuery = () =>
     knex('groups')
       .join('users_groups', 'groups.id', 'users_groups.group_id')
-      .where('users_groups.user_id', user_id);
+      .where('users_groups.user_id', user_id)
+      .whereNull('groups.deleted_at');
 
   const [data, countRows] = await Promise.all([
     baseQuery()
@@ -116,7 +118,7 @@ const getUsersByGroup = async (group_id: number) => {
 };
 
 const getGroupById = async (groupId: number) => {
-  return await knex('groups').where({ id: groupId }).first();
+  return await knex('groups').where({ id: groupId }).whereNull('deleted_at').first();
 };
 
 const getGroupByCode = async (code: string) => {
@@ -124,6 +126,7 @@ const getGroupByCode = async (code: string) => {
     .join('users as owner', 'groups.owner_id', 'owner.id')
     .join('user_profiles as owner_profile', 'owner.id', 'owner_profile.user_id')
     .whereRaw('UPPER(groups.code) = UPPER(?)', [code])
+    .whereNull('groups.deleted_at')
     .select('groups.id', 'groups.name', 'groups.description', 'groups.code', 'groups.owner_id', 'groups.created_at', 'owner_profile.name as owner_name')
     .first();
 };
@@ -137,8 +140,8 @@ const getOldestMember = async (groupId: number, excludeUserId: number) => {
     .first();
 };
 
-const deleteGroup = async (groupId: number) => {
-  await knex('groups').where({ id: groupId }).del();
+const softDeleteGroup = async (groupId: number) => {
+  await knex('groups').where({ id: groupId }).update({ deleted_at: new Date() });
 };
 
 const updateGroup = async (groupId: number, data: Partial<Group>) => {
@@ -161,5 +164,5 @@ export default {
   getGroupByCode,
   updateGroup,
   getOldestMember,
-  deleteGroup,
+  softDeleteGroup,
 };

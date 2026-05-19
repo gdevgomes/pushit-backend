@@ -113,6 +113,15 @@ export const joinWithBirthday = async (req: Request, res: Response, next: NextFu
   }
 };
 
+export const deleteGroup = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    await groupService.deleteGroup(Number(req.params.id), req.user!);
+    res.status(200).json({ message: 'Grupo apagado' });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const validateGroup = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const result = await groupService.validateGroup(req.body.groupId);

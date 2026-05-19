@@ -10,6 +10,7 @@ const groupRouter = Router();
 groupRouter.get('/code/:code', groupController.getGroupByCode);
 groupRouter.post('/', authMiddleware, requireElevatedAccount, validate(CreateGroupSchema), groupController.createGroup);
 groupRouter.put('/:id', authMiddleware, validate(UpdateGroupSchema), groupController.updateGroup);
+groupRouter.delete('/:id', authMiddleware, groupController.deleteGroup);
 groupRouter.post('/join', authMiddleware, validate(JoinLeaveGroupSchema), groupController.joinGroup);
 groupRouter.post('/leave', authMiddleware, validate(JoinLeaveGroupSchema), groupController.leaveGroup);
 groupRouter.get('/user', authMiddleware, validate(PaginationSchema, 'query'), groupController.getUserGroups);

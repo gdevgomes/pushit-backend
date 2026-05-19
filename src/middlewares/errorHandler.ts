@@ -34,7 +34,6 @@ const errorHandler = (
     return res.status(error.statusCode).json({
       code: error.code,
       key: error.key,
-      message: error.message,
       ...(error.detail && { detail: error.detail }),
       ...(isDev && { stack: error.stack }),
     });
@@ -44,7 +43,6 @@ const errorHandler = (
     return res.status(StatusCodes.BAD_REQUEST).json({
       code: 0,
       key: 'DATABASE_ERROR',
-      message: 'Database error',
       ...(isDev && { detail: error.message, stack: error.stack }),
     });
   }
@@ -54,7 +52,6 @@ const errorHandler = (
   return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
     code: 0,
     key: 'INTERNAL_ERROR',
-    message: 'Internal server error',
     ...(isDev && { stack: (error as Error).stack }),
   });
 };

@@ -25,7 +25,7 @@ describe('POST /auth/register', () => {
     const res = await request(app).post('/auth/register').send({ ...baseUser, username: 'outro_user' });
 
     expect(res.status).toBe(409);
-    expect(res.body.message).toBe('User already exists');
+    expect(res.body.key).toBe('USER_EXISTS');
   });
 
   it('retorna 409 quando username já cadastrado', async () => {
@@ -33,7 +33,7 @@ describe('POST /auth/register', () => {
     const res = await request(app).post('/auth/register').send({ ...baseUser, email: 'outro@test.com' });
 
     expect(res.status).toBe(409);
-    expect(res.body.message).toBe('User already exists');
+    expect(res.body.key).toBe('USER_EXISTS');
   });
 
   it('retorna 400 quando senhas não coincidem', async () => {
@@ -42,7 +42,7 @@ describe('POST /auth/register', () => {
       .send({ ...baseUser, confirmPassword: 'outra_senha' });
 
     expect(res.status).toBe(400);
-    expect(res.body.message).toBe('Passwords do not match');
+    expect(res.body.key).toBe('PASSWORD_MISMATCH');
   });
 
   it('retorna 400 quando password está ausente', async () => {

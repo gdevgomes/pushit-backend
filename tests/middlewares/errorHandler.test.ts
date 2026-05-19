@@ -26,31 +26,38 @@ describe('isKnexError', () => {
 });
 
 describe('errorHandler', () => {
-  it('trata AppError sem detail', () => {
+  it('trata AppError sem detail — retorna code, key, sem message e sem detail', () => {
     const res = mockRes();
     errorHandler(new AppError(Errors.GROUP_NOT_FOUND), req, res, next);
-    expect((res.status as ReturnType<typeof vi.fn>).mock.calls[0][0]).toBe(404);
-    expect((res.json as ReturnType<typeof vi.fn>).mock.calls[0][0]).not.toHaveProperty('detail');
+    expect((res.status as ReturnType<typeof vi.fn>).mock.calls[0]![0]).toBe(404);
+    const body = (res.json as ReturnType<typeof vi.fn>).mock.calls[0]![0];
+    expect(body).toMatchObject({ code: 2001, key: 'GROUP_NOT_FOUND' });
+    expect(body).not.toHaveProperty('message');
+    expect(body).not.toHaveProperty('detail');
   });
 
   it('inclui detail quando AppError tem detail', () => {
     const res = mockRes();
     errorHandler(new AppError(Errors.GROUP_NOT_FOUND, 'info extra'), req, res, next);
-    expect((res.json as ReturnType<typeof vi.fn>).mock.calls[0][0]).toMatchObject({ detail: 'info extra' });
+    expect((res.json as ReturnType<typeof vi.fn>).mock.calls[0]![0]).toMatchObject({ detail: 'info extra' });
   });
 
-  it('trata KnexError → 400 DATABASE_ERROR', () => {
+  it('trata KnexError → 400 DATABASE_ERROR sem message', () => {
     const res = mockRes();
     const e = Object.assign(new Error('UNIQUE constraint failed'), { code: 'SQLITE_CONSTRAINT' });
     errorHandler(e as Error, req, res, next);
-    expect((res.status as ReturnType<typeof vi.fn>).mock.calls[0][0]).toBe(400);
-    expect((res.json as ReturnType<typeof vi.fn>).mock.calls[0][0]).toMatchObject({ key: 'DATABASE_ERROR' });
+    expect((res.status as ReturnType<typeof vi.fn>).mock.calls[0]![0]).toBe(400);
+    const body = (res.json as ReturnType<typeof vi.fn>).mock.calls[0]![0];
+    expect(body).toMatchObject({ key: 'DATABASE_ERROR' });
+    expect(body).not.toHaveProperty('message');
   });
 
-  it('trata erro genérico → 500 INTERNAL_ERROR', () => {
+  it('trata erro genérico → 500 INTERNAL_ERROR sem message', () => {
     const res = mockRes();
     errorHandler(new Error('boom'), req, res, next);
-    expect((res.status as ReturnType<typeof vi.fn>).mock.calls[0][0]).toBe(500);
-    expect((res.json as ReturnType<typeof vi.fn>).mock.calls[0][0]).toMatchObject({ key: 'INTERNAL_ERROR' });
+    expect((res.status as ReturnType<typeof vi.fn>).mock.calls[0]![0]).toBe(500);
+    const body = (res.json as ReturnType<typeof vi.fn>).mock.calls[0]![0];
+    expect(body).toMatchObject({ key: 'INTERNAL_ERROR' });
+    expect(body).not.toHaveProperty('message');
   });
 });

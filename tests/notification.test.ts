@@ -80,7 +80,7 @@ describe('POST /group/:id/notifications', () => {
     const res = await postNotification(member.token, group.id);
 
     expect(res.status).toBe(400);
-    expect(res.body.message).toMatch(/limit/i);
+    expect(res.body.key).toBe('NOTIFICATION_LIMIT_REACHED');
   });
 
   it('dono pode criar até 5 notificações (limite Starter)', async () => {
@@ -97,7 +97,7 @@ describe('POST /group/:id/notifications', () => {
     await bulkInsertNotifications(group.id, owner.id, 5);
     const res = await postNotification(owner.token, group.id, { name: 'Notif 6' });
     expect(res.status).toBe(400);
-    expect(res.body.message).toMatch(/limit/i);
+    expect(res.body.key).toBe('NOTIFICATION_LIMIT_REACHED');
   });
 
   it('retorna 403 para não-membro', async () => {
